@@ -41,7 +41,10 @@ public class TopTracksFragment extends Fragment {
     private TrackAdapter mTrackAdapter;
 
     // Contains the track data for mTrackAdapter.
-    private List<Track> mTrackList;
+    private static List<Track> mTrackList = new ArrayList<>();
+
+    // Holds the id of the last artist that was looked up.
+    private static String mLastArtistFetched = "";
 
     // The ID of the artist we're getting tracks for.
     private String mArtistId;
@@ -63,8 +66,6 @@ public class TopTracksFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
 
-
-        mTrackList = new ArrayList<>();
         mTrackAdapter = new TrackAdapter(mTrackList);
 
         // Get the user's country, and store it in a map.
@@ -93,12 +94,18 @@ public class TopTracksFragment extends Fragment {
             mArtistId = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
-        updateTracks();
+        if (!mLastArtistFetched.equals(mArtistId))  {
+            mLastArtistFetched = mArtistId;
+            updateTracks();
+        }
 
         return view;
     }
 
+
     private void updateTracks() {
+
+        mTrackAdapter.clear();
 
         /*
          * Creates an AsyncTask to fetch the track data in the background.
@@ -125,9 +132,10 @@ public class TopTracksFragment extends Fragment {
                 if ((topTrackList == null) || (topTrackList.isEmpty())) {
                     Toast.makeText(getActivity(), R.string.track_list_empty, Toast.LENGTH_LONG).show();
                 } else {
-                    mTrackAdapter.clear();
+                    mTrackAdapter.clear(); // This was cleared above, just a precaution.
                     mTrackAdapter.addAll(topTrackList);
                 }
+
             }
 
         }.execute(); // Kick-off the AsyncTask

@@ -189,7 +189,7 @@ public class ArtistSearchFragment extends Fragment {
                     Toast.makeText(getActivity(), R.string.artist_list_empty, Toast.LENGTH_LONG).show();
 
                 } else {
-                    mArtistAdapter.clear();
+                    mArtistAdapter.clear();  // This was cleared above, just a precaution.
                     mArtistAdapter.addAll(artistList);
                 }
 

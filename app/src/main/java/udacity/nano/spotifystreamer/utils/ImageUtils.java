@@ -18,6 +18,8 @@ public class ImageUtils {
         long bestScore = Long.MAX_VALUE;
 
         for (Image i : images) {
+
+            // A simple heuristic, but it seems to do the trick.
             long score = Math.abs((i.height - idealHeight) * (i.width - idealWidth));
 
             if (score < bestScore) {

@@ -1,9 +1,9 @@
 package udacity.nano.spotifystreamer;
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +26,9 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
+import retrofit.Callback;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 
@@ -91,56 +94,56 @@ public class TopTracksFragment extends Fragment {
 
         // Grab the artist's ID from the intent extra data.
         Intent intent = getActivity().getIntent();
-        if ((intent != null) && (intent.hasExtra(Intent.EXTRA_TEXT)))  {
+        if ((intent != null) && (intent.hasExtra(Intent.EXTRA_TEXT))) {
             mArtistId = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
-        if (!mLastArtistFetched.equals(mArtistId))  {
+        if (!mLastArtistFetched.equals(mArtistId)) {
             mLastArtistFetched = mArtistId;
-            updateTracks();
+            fetchTracks();
         }
 
         return view;
     }
 
 
-    private void updateTracks() {
+    private void fetchTracks() {
 
-        mTrackAdapter.clear();
+        SpotifyApi spotifyApi = new SpotifyApi();
+        SpotifyService spotifyService = spotifyApi.getService();
 
-        /*
-         * Creates an AsyncTask to fetch the track data in the background.
-         */
-        new AsyncTask<String, Void, List<Track>>() {
+        spotifyService.getArtistTopTrack(mArtistId, mLocationMap, new Callback<Tracks>() {
 
             @Override
-            protected List<Track> doInBackground(String... params) {
+            public void success(final Tracks tracks, Response response) {
 
-                // Get track data from Spotify.
-                SpotifyApi api = new SpotifyApi();
-                SpotifyService spotify = api.getService();
-                Tracks topTracks = spotify.getArtistTopTrack(mArtistId, mLocationMap);
+                getActivity().runOnUiThread(new Runnable() {
 
-                return topTracks.tracks;
+                    @Override
+                    public void run() {
+                        mTrackAdapter.clear();
+                        mTrackAdapter.addAll(tracks.tracks);
+                    }
+                });
             }
 
-            /*
-             * Called after all the track data is fetched.
-             */
             @Override
-            protected void onPostExecute(List<Track> topTrackList) {
+            public void failure(final RetrofitError error) {
 
-                if ((topTrackList == null) || (topTrackList.isEmpty())) {
-                    Toast.makeText(getActivity(), R.string.track_list_empty, Toast.LENGTH_LONG).show();
-                } else {
-                    mTrackAdapter.clear(); // This was cleared above, just a precaution.
-                    mTrackAdapter.addAll(topTrackList);
-                }
+                getActivity().runOnUiThread(new Runnable() {
 
+                    @Override
+                    public void run() {
+                        Log.e(TAG, "Error Getting Tracks: " + error.getMessage());
+                        Toast.makeText(
+                                getActivity(),
+                                getString(R.string.error_fetching_tracks),
+                                Toast.LENGTH_LONG)
+                                .show();
+                    }
+                });
             }
-
-        }.execute(); // Kick-off the AsyncTask
-
+        });
     }
 
     /*
@@ -188,7 +191,7 @@ public class TopTracksFragment extends Fragment {
 
             Track track = getItem(position);
 
-            int idealWidth =(int) getContext().getResources().getDimension(R.dimen.icon_width);
+            int idealWidth = (int) getContext().getResources().getDimension(R.dimen.icon_width);
             int idealHeight = (int) getContext().getResources().getDimension(R.dimen.icon_height);
 
             if (track != null) {

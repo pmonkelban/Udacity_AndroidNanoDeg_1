@@ -1,7 +1,6 @@
 package udacity.nano.spotifystreamer;
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -28,7 +27,9 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Image;
-import kaaes.spotify.webapi.android.models.Pager;
+import retrofit.Callback;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 import udacity.nano.spotifystreamer.activities.TopTracksActivity;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
@@ -111,7 +112,7 @@ public class ArtistSearchFragment extends Fragment {
                 /*
                  * Hitting <Enter> results in an IME_ACTION_UNSPECIFIED.  Clicking "Done" results
                  * in an IME_ACTION_DONE.  If we get either of these events, then check the length
-                 * of the search string, and as long as it's not empty, call updateArtists() to
+                 * of the search string, and as long as it's not empty, call fetchArtists() to
                  * perform the search.
                  */
                 if ((actionId == EditorInfo.IME_ACTION_UNSPECIFIED) ||
@@ -123,7 +124,7 @@ public class ArtistSearchFragment extends Fragment {
                         return false;
 
                     } else {
-                        updateArtists();
+                        fetchArtists();
                         return true;
                     }
                 }
@@ -132,7 +133,7 @@ public class ArtistSearchFragment extends Fragment {
             }
         });
 
-//        updateArtists();
+//        fetchArtists();
 
         return view;
     }
@@ -141,14 +142,14 @@ public class ArtistSearchFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        updateArtists();
+        fetchArtists();
     }
 
     /*
      * Fetches Artist data using Spotify web service.
      * The artists name is contained in the mArtistSearchText field.
      */
-    private void updateArtists() {
+    private void fetchArtists() {
 
         final String artistName = mArtistSearchText.getText().toString();
 
@@ -156,47 +157,41 @@ public class ArtistSearchFragment extends Fragment {
             return;
         }
 
-        /*
-         * Clear the current list, so it doesn't get mixed up with the new list
-         * that is being created.
-         */
-        mArtistAdapter.clear();
 
-        /*
-         * Creates an AsyncTask to fetch the data in a background thread.
-         */
-        new AsyncTask<String, Void, List<Artist>>() {
+        SpotifyApi spotifyApi = new SpotifyApi();
+        SpotifyService spotifyService = spotifyApi.getService();
+
+        spotifyService.searchArtists(artistName, new Callback<ArtistsPager>() {
 
             @Override
-            protected List<Artist> doInBackground(String... params) {
+            public void success(final ArtistsPager artistsPager, Response response) {
 
-                // Get Artist data from Spotify.
-                SpotifyApi api = new SpotifyApi();
-                SpotifyService spotify = api.getService();
-                ArtistsPager results = spotify.searchArtists(artistName);
+                getActivity().runOnUiThread(new Runnable() {
 
-                Pager<Artist> artistPager = results.artists;
-                return artistPager.items;
+                    @Override
+                    public void run() {
+                        mArtistAdapter.clear();
+                        mArtistAdapter.addAll(artistsPager.artists.items);
+                    }
+                });
             }
 
-            /*
-             * Called when the artist data becomes available.
-             */
             @Override
-            protected void onPostExecute(List<Artist> artistList) {
-
-                if ((artistList == null) || (artistList.isEmpty())) {
-                    Toast.makeText(getActivity(), R.string.artist_list_empty, Toast.LENGTH_LONG).show();
-
-                } else {
-                    mArtistAdapter.clear();  // This was cleared above, just a precaution.
-                    mArtistAdapter.addAll(artistList);
-                }
-
+            public void failure(final RetrofitError error) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.e(TAG, "Error Getting Artists: " + error.getMessage());
+                        Toast.makeText(
+                                getActivity(),
+                                getString(R.string.error_fetching_artists),
+                                Toast.LENGTH_LONG)
+                                .show();
+                    }
+                });
             }
 
-        }.execute();  // Kick-off the AsyncTask
-
+        });
     }
 
     /*

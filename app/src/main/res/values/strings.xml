@@ -12,4 +12,7 @@
     <string name="no_search_string">Please enter the name of an artist</string>
     <string name="title_activity_top_tracks">TopTracksActivity</string>
 
+    <string name="error_fetching_artists">Error retreiving list of Artists</string>
+    <string name="error_fetching_tracks">Error retreiving list of Tracks</string>
+
 </resources>

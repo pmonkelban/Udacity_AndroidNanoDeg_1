@@ -3,15 +3,13 @@ package udacity.nano.spotifystreamer;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -51,7 +49,7 @@ public class ArtistSearchFragment extends Fragment {
 
 
     // The text field where the user enters their search.
-    private EditText mArtistSearchText;
+    private SearchView mArtistSearchText;
 
     /*
      * No arg Constructor.
@@ -101,48 +99,53 @@ public class ArtistSearchFragment extends Fragment {
         });
 
         // The field where the user enters the artist they're looking for.
-        mArtistSearchText = (EditText) view.findViewById(R.id.text_search);
+        mArtistSearchText = (SearchView) view.findViewById(R.id.text_artist_search);
 
         // Detect when the user hits Enter or Done.
-        mArtistSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+//        mArtistSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+//
+//            @Override
+//            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+//
+//                /*
+//                 * Hitting <Enter> results in an IME_ACTION_UNSPECIFIED.  Clicking "Done" results
+//                 * in an IME_ACTION_DONE.  If we get either of these events, then check the length
+//                 * of the search string, and as long as it's not empty, call fetchArtists() to
+//                 * perform the search.
+//                 */
+//                if ((actionId == EditorInfo.IME_ACTION_UNSPECIFIED) ||
+//                        (actionId == EditorInfo.IME_ACTION_DONE)) {
+//
+//                    if ((v.getText() == null) || (v.getText().length() < 1)) {
+//                        Toast.makeText(getActivity(), R.string.no_search_string, Toast.LENGTH_LONG)
+//                                .show();
+//                        return false;
+//
+//                    } else {
+//                        fetchArtists();
+//                        return true;
+//                    }
+//                }
+//
+//                return false;
+//            }
+//        });
+
+        mArtistSearchText.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
             @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+            public boolean onQueryTextSubmit(String s) {
+                fetchArtists();
+                return true;
+            }
 
-                /*
-                 * Hitting <Enter> results in an IME_ACTION_UNSPECIFIED.  Clicking "Done" results
-                 * in an IME_ACTION_DONE.  If we get either of these events, then check the length
-                 * of the search string, and as long as it's not empty, call fetchArtists() to
-                 * perform the search.
-                 */
-                if ((actionId == EditorInfo.IME_ACTION_UNSPECIFIED) ||
-                        (actionId == EditorInfo.IME_ACTION_DONE)) {
-
-                    if ((v.getText() == null) || (v.getText().length() < 1)) {
-                        Toast.makeText(getActivity(), R.string.no_search_string, Toast.LENGTH_LONG)
-                                .show();
-                        return false;
-
-                    } else {
-                        fetchArtists();
-                        return true;
-                    }
-                }
-
+            @Override
+            public boolean onQueryTextChange(String s) {
                 return false;
             }
         });
 
-//        fetchArtists();
-
         return view;
-    }
-
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        fetchArtists();
     }
 
     /*
@@ -151,12 +154,17 @@ public class ArtistSearchFragment extends Fragment {
      */
     private void fetchArtists() {
 
-        final String artistName = mArtistSearchText.getText().toString();
-
-        if ((artistName == null) || (artistName.trim().length() == 0)) {
+        if (mArtistSearchText.getQuery() == null)  {
             return;
         }
 
+        final String artistName = mArtistSearchText.getQuery().toString().trim();
+
+        if (artistName.length() == 0) {
+            return;
+        }
+
+        mArtistAdapter.clear();
 
         SpotifyApi spotifyApi = new SpotifyApi();
         SpotifyService spotifyService = spotifyApi.getService();
@@ -171,7 +179,17 @@ public class ArtistSearchFragment extends Fragment {
                     @Override
                     public void run() {
                         mArtistAdapter.clear();
-                        mArtistAdapter.addAll(artistsPager.artists.items);
+
+                        if (artistsPager.artists.total < 1)  {
+                            Toast.makeText(
+                                    getActivity(),
+                                    getString(R.string.artist_list_empty),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
+                        } else {
+                            mArtistAdapter.addAll(artistsPager.artists.items);
+                        }
+
                     }
                 });
             }

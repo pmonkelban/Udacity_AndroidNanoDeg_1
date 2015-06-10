@@ -109,6 +109,8 @@ public class TopTracksFragment extends Fragment {
 
     private void fetchTracks() {
 
+        mTrackAdapter.clear();
+
         SpotifyApi spotifyApi = new SpotifyApi();
         SpotifyService spotifyService = spotifyApi.getService();
 
@@ -122,7 +124,16 @@ public class TopTracksFragment extends Fragment {
                     @Override
                     public void run() {
                         mTrackAdapter.clear();
-                        mTrackAdapter.addAll(tracks.tracks);
+
+                        if ((tracks.tracks == null) || (tracks.tracks.isEmpty())) {
+                            Toast.makeText(
+                                    getActivity(),
+                                    getString(R.string.track_list_empty),
+                                    Toast.LENGTH_SHORT)
+                                    .show();
+                        } else {
+                            mTrackAdapter.addAll(tracks.tracks);
+                        }
                     }
                 });
             }

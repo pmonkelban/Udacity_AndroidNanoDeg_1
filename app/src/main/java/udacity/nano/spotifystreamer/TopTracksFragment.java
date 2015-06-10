@@ -69,7 +69,8 @@ public class TopTracksFragment extends Fragment {
         mTrackAdapter = new TrackAdapter(mTrackList);
 
         // Get the user's country, and store it in a map.
-        mLocationMap.put("country", Locale.getDefault().getCountry());
+        mLocationMap.put(SpotifyService.COUNTRY,
+                Locale.getDefault().getCountry());
 
     }
 

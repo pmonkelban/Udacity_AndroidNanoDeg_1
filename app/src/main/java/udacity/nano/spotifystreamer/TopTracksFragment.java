@@ -29,6 +29,7 @@ import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
+import udacity.nano.spotifystreamer.model.TrackData;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 
@@ -37,17 +38,15 @@ public class TopTracksFragment extends Fragment {
     // An identifier used for logging
     private final String TAG = getClass().getCanonicalName();
 
-    /*
-    * Bound to a UI ListView element to provide the results of
-    * the top tracks query.
-    */
-    private TrackAdapter mTrackAdapter;
+    // A key to get track list out of the Bundle
+    private static final String BUNDLE_KEY_TRACK_LIST = "track_list";
 
     // Contains the track data for mTrackAdapter.
-    private static List<Track> mTrackList = new ArrayList<>();
+    private ArrayList<TrackData> mTrackList;
 
-    // Holds the id of the last artist that was looked up.
-    private static String mLastArtistFetched = "";
+    // Bound to a UI ListView element to provide the results of
+    // the top tracks query.
+    private TrackAdapter mTrackAdapter;
 
     // The ID of the artist we're getting tracks for.
     private String mArtistId;
@@ -58,18 +57,19 @@ public class TopTracksFragment extends Fragment {
      */
     private Map<String, Object> mLocationMap = new HashMap<>();
 
+    // Desired height and width for icons.
+    private int idealIconWidth;
+    private int idealIconHeight;
+
+    private final SpotifyService mSpotifyService;
+
+
     /*
      * No arg Constructor.
      */
     public TopTracksFragment() {
-    }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setRetainInstance(true);
-
-        mTrackAdapter = new TrackAdapter(mTrackList);
+        mSpotifyService = new SpotifyApi().getService();
 
         // Get the user's country, and store it in a map.
         mLocationMap.put(SpotifyService.COUNTRY,
@@ -78,19 +78,39 @@ public class TopTracksFragment extends Fragment {
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+
+        idealIconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
+        idealIconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
+
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        super.onSaveInstanceState(outState);
+
+        if (mTrackList != null) {
+            outState.putParcelableArrayList(BUNDLE_KEY_TRACK_LIST, mTrackList);
+        }
+    }
+
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        mTrackAdapter = new TrackAdapter(mTrackList);
 
         /*
          * Inflate the view that contains the top tracks ListView.
          */
         View view = inflater.inflate(R.layout.fragment_track_list, container, false);
 
-        // Grab the ListView and set its adapter
-        ListView listView = (ListView) view.findViewById(R.id.listview_tracks);
-        listView.setAdapter(mTrackAdapter);
+        // Create a new Adapter and bind it to the ListView
+        ListView trackListView = (ListView) view.findViewById(R.id.listview_tracks);
+        mTrackAdapter = new TrackAdapter(new ArrayList<TrackData>());
+        trackListView.setAdapter(mTrackAdapter);
 
         // Grab the artist's ID from the intent extra data.
         Intent intent = getActivity().getIntent();
@@ -98,8 +118,19 @@ public class TopTracksFragment extends Fragment {
             mArtistId = intent.getStringExtra(Intent.EXTRA_TEXT);
         }
 
-        if (!mLastArtistFetched.equals(mArtistId)) {
-            mLastArtistFetched = mArtistId;
+        /*
+        * If we've already have the track info from the savedInstanceState Bundle, then
+        * load that into mTrackList.  Otherwise, use fetchTracks() to load it using the
+        * Spotify API.
+        */
+        if ((savedInstanceState != null) &&
+                (savedInstanceState.containsKey(BUNDLE_KEY_TRACK_LIST))) {
+
+            mTrackList = savedInstanceState.getParcelableArrayList(BUNDLE_KEY_TRACK_LIST);
+            mTrackAdapter.clear();
+            mTrackAdapter.addAll(mTrackList);
+
+        } else {
             fetchTracks();
         }
 
@@ -107,17 +138,24 @@ public class TopTracksFragment extends Fragment {
     }
 
 
+    /*
+     * Fetches Track data using the Spotify web service.
+     * Get's the top hits associated with the given artist, and puts them in mTrackAdapter.
+     */
     private void fetchTracks() {
 
         mTrackAdapter.clear();
 
-        SpotifyApi spotifyApi = new SpotifyApi();
-        SpotifyService spotifyService = spotifyApi.getService();
-
-        spotifyService.getArtistTopTrack(mArtistId, mLocationMap, new Callback<Tracks>() {
+        mSpotifyService.getArtistTopTrack(mArtistId, mLocationMap, new Callback<Tracks>() {
 
             @Override
             public void success(final Tracks tracks, Response response) {
+
+                /*
+                 * Convert the Track objects into TrackData objects which
+                 * can be stored in a Bundle.
+                 */
+                mTrackList = convertToTrackData(tracks);
 
                 getActivity().runOnUiThread(new Runnable() {
 
@@ -125,14 +163,14 @@ public class TopTracksFragment extends Fragment {
                     public void run() {
                         mTrackAdapter.clear();
 
-                        if ((tracks.tracks == null) || (tracks.tracks.isEmpty())) {
+                        if (mTrackList.isEmpty()){
                             Toast.makeText(
                                     getActivity(),
                                     getString(R.string.track_list_empty),
                                     Toast.LENGTH_SHORT)
                                     .show();
-                        } else {
-                            mTrackAdapter.addAll(tracks.tracks);
+                        }else{
+                            mTrackAdapter.addAll(mTrackList);
                         }
                     }
                 });
@@ -140,9 +178,7 @@ public class TopTracksFragment extends Fragment {
 
             @Override
             public void failure(final RetrofitError error) {
-
                 getActivity().runOnUiThread(new Runnable() {
-
                     @Override
                     public void run() {
                         Log.e(TAG, "Error Getting Tracks: " + error.getMessage());
@@ -158,9 +194,35 @@ public class TopTracksFragment extends Fragment {
     }
 
     /*
+     * Converts a list of artists to a list of ArtistData.  For each Artist, the
+     * ArtistData object will receive the one URL for the icon image that we'll use.
+     */
+    private ArrayList<TrackData> convertToTrackData(Tracks tracks) {
+
+        ArrayList<TrackData> trackDataList = new ArrayList<>();
+
+        if (tracks != null) {
+
+            for (Track track : tracks.tracks) {
+
+                Image i = ImageUtils.getClosestImageSize(track.album.images, idealIconWidth,
+                        idealIconHeight);
+
+                String iconUrl = (i == null) ? null : i.url;
+
+                trackDataList.add(new TrackData(track.name, track.album.name, iconUrl));
+            }
+
+        }
+
+        return trackDataList;
+
+    }
+
+    /*
      * An Adapter that know how to populate track data.
      */
-    class TrackAdapter extends ArrayAdapter<Track> {
+    class TrackAdapter extends ArrayAdapter<TrackData> {
 
         private class ViewData {
             ImageView icon;
@@ -169,7 +231,7 @@ public class TopTracksFragment extends Fragment {
         }
 
 
-        public TrackAdapter(List<Track> objects) {
+        public TrackAdapter(List<TrackData> objects) {
             super(getActivity(), 0, objects);
         }
 
@@ -186,7 +248,8 @@ public class TopTracksFragment extends Fragment {
              */
             if (view == null) {
 
-                view = getActivity().getLayoutInflater().inflate(R.layout.list_item_track, null);
+                view = getActivity().getLayoutInflater().inflate(
+                        R.layout.list_item_track, null);
 
                 viewData = new ViewData();
                 viewData.icon = (ImageView) view.findViewById(R.id.image_track_icon);
@@ -200,22 +263,17 @@ public class TopTracksFragment extends Fragment {
             }
 
 
-            Track track = getItem(position);
-
-            int idealWidth = (int) getContext().getResources().getDimension(R.dimen.icon_width);
-            int idealHeight = (int) getContext().getResources().getDimension(R.dimen.icon_height);
+            TrackData track = getItem(position);
 
             if (track != null) {
-                viewData.trackName.setText(track.name);
-                viewData.albumName.setText(track.album.name);
+                viewData.trackName.setText(track.getName());
+                viewData.albumName.setText(track.getAlbum());
 
-                Image image = ImageUtils.getClosestImageSize(track.album.images,
-                        idealWidth, idealHeight);
-
-                if (image != null) {
+                // Fetch the image and store in ViewData object's icon.
+                if (track.getUrl() != null) {
                     Picasso.with(getContext())
-                            .load(image.url)
-                            .resize(idealWidth, idealHeight)
+                            .load(track.getUrl())
+                            .resize(idealIconWidth, idealIconHeight)
                             .into(viewData.icon);
                 }
             }

@@ -25,10 +25,11 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Image;
+import kaaes.spotify.webapi.android.models.Pager;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
-import udacity.nano.spotifystreamer.activities.TopTracksActivity;
+import udacity.nano.spotifystreamer.model.ArtistData;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 
@@ -37,35 +38,63 @@ public class ArtistSearchFragment extends Fragment {
     // An identifier used for logging
     private final String TAG = getClass().getCanonicalName();
 
+    // A key to get artist list out of the Bundle
+    private static final String BUNDLE_KEY_ARTIST_LIST = "artists_list";
 
     // Contains the artist data for mArtistAdapter.
-    private static List<Artist> mArtistList = new ArrayList<>();
+    private ArrayList<ArtistData> mArtistList;
 
-    /*
-    * mArtistAdapter is bound to a UI ListView element to provide the
-    * results of the artist search.
-    */
+    // mArtistAdapter is bound to a UI ListView element to provide the
+    //results of the artist search.
     private ArtistAdapter mArtistAdapter;
 
 
     // The text field where the user enters their search.
     private SearchView mArtistSearchText;
 
+    // Desired height and width for icons.
+    private int idealIconWidth;
+    private int idealIconHeight;
+
+    /*
+     * Prevents multiple searches within a short period of time.
+     * This normally happens if the user has a real keyboard.
+     * Pressing enter will result in both a Key Down and a Key Up
+     * event firing, resulting in two queries being sent to the
+     * Spotify API.
+     */
+    private static final Long SEARCH_REQUEST_WINDOW = 500L;  // one-half second
+    private long lastSearchRequestTime;
+
+    private final SpotifyService mSpotifyService;
+
     /*
      * No arg Constructor.
      */
     public ArtistSearchFragment() {
+        mSpotifyService = new SpotifyApi().getService();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        setRetainInstance(true);
 
-        mArtistAdapter = new ArtistAdapter(mArtistList);
+        idealIconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
+        idealIconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
     }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        super.onSaveInstanceState(outState);
+
+        if (mArtistList != null) {
+            outState.putParcelableArrayList(BUNDLE_KEY_ARTIST_LIST, mArtistList);
+        }
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -77,66 +106,67 @@ public class ArtistSearchFragment extends Fragment {
          */
         View view = inflater.inflate(R.layout.fragment_artist_search, container, false);
 
-        // Grab the ListView and set its adapter.
-        ListView listView = (ListView) view.findViewById(R.id.listview_artists);
-        listView.setAdapter(mArtistAdapter);
+        // Create a new Adapter and bind it to the ListView
+        ListView artistListView = (ListView) view.findViewById(R.id.listview_artists);
+
+        if ((savedInstanceState != null) &&
+                (savedInstanceState.containsKey(BUNDLE_KEY_ARTIST_LIST))) {
+
+            mArtistList = savedInstanceState.getParcelableArrayList(BUNDLE_KEY_ARTIST_LIST);
+
+        } else  {
+            mArtistList = new ArrayList<ArtistData>();
+        }
+
+        mArtistAdapter = new ArtistAdapter(mArtistList);
+        artistListView.setAdapter(mArtistAdapter);
 
         /*
          * Detect when a list view item (an artist) is clicked, and launch
          * and intent passing the artist's id as an extra.
          */
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        artistListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Artist artist = mArtistAdapter.getItem(position);
+                ArtistData artist = mArtistAdapter.getItem(position);
 
-                Log.d(TAG, "Artist Clicked.  Name=" + artist.name);
+                Log.d(TAG, "Artist Clicked.  Name=" + artist.getName());
 
                 Intent intent = new Intent(getActivity(), TopTracksActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, artist.id);
+                        .putExtra(Intent.EXTRA_TEXT, artist.getId());
                 startActivity(intent);
+
             }
         });
 
         // The field where the user enters the artist they're looking for.
         mArtistSearchText = (SearchView) view.findViewById(R.id.text_artist_search);
 
-        // Detect when the user hits Enter or Done.
-//        mArtistSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-//
-//            @Override
-//            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-//
-//                /*
-//                 * Hitting <Enter> results in an IME_ACTION_UNSPECIFIED.  Clicking "Done" results
-//                 * in an IME_ACTION_DONE.  If we get either of these events, then check the length
-//                 * of the search string, and as long as it's not empty, call fetchArtists() to
-//                 * perform the search.
-//                 */
-//                if ((actionId == EditorInfo.IME_ACTION_UNSPECIFIED) ||
-//                        (actionId == EditorInfo.IME_ACTION_DONE)) {
-//
-//                    if ((v.getText() == null) || (v.getText().length() < 1)) {
-//                        Toast.makeText(getActivity(), R.string.no_search_string, Toast.LENGTH_LONG)
-//                                .show();
-//                        return false;
-//
-//                    } else {
-//                        fetchArtists();
-//                        return true;
-//                    }
-//                }
-//
-//                return false;
-//            }
-//        });
-
+        /*
+         * Sets a listener on the SearchView that kicks off fetchArtists() when the
+         * user is done entering their search query.
+         */
         mArtistSearchText.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
             @Override
             public boolean onQueryTextSubmit(String s) {
-                fetchArtists();
-                return true;
+
+                /*
+                 * Throw out search requests if they come too quickly. This addresses
+                 * a bug where hitting enter with a real keyboard results in two
+                 * events firing.
+                 */
+
+                long time = System.currentTimeMillis();
+
+                if ((lastSearchRequestTime + SEARCH_REQUEST_WINDOW) < time) {
+                    lastSearchRequestTime = time;
+                    fetchArtists();
+                    return true;
+                } else {
+                    Log.d(TAG, "Duplicate search request detected - Ignoring");
+                    return false;
+                }
             }
 
             @Override
@@ -152,9 +182,11 @@ public class ArtistSearchFragment extends Fragment {
      * Fetches Artist data using Spotify web service.
      * The artists name is contained in the mArtistSearchText field.
      */
+
     private void fetchArtists() {
 
-        if (mArtistSearchText.getQuery() == null)  {
+        // The SearchView should not allow an empty query - but just in case...
+        if (mArtistSearchText.getQuery() == null) {
             return;
         }
 
@@ -164,15 +196,23 @@ public class ArtistSearchFragment extends Fragment {
             return;
         }
 
+        /*
+         * Clear the artist list before starting the query to prevent the data
+         * from intermingling.  This shows up as the wrong icons next to a name
+         * until the new images have time to load.
+         */
         mArtistAdapter.clear();
 
-        SpotifyApi spotifyApi = new SpotifyApi();
-        SpotifyService spotifyService = spotifyApi.getService();
-
-        spotifyService.searchArtists(artistName, new Callback<ArtistsPager>() {
+        mSpotifyService.searchArtists(artistName, new Callback<ArtistsPager>() {
 
             @Override
             public void success(final ArtistsPager artistsPager, Response response) {
+
+                /*
+                 * Convert the Artist objects into ArtistData objects which
+                 * can be stored in a Bundle.
+                 */
+                mArtistList = convertToArtistData(artistsPager.artists);
 
                 getActivity().runOnUiThread(new Runnable() {
 
@@ -180,14 +220,14 @@ public class ArtistSearchFragment extends Fragment {
                     public void run() {
                         mArtistAdapter.clear();
 
-                        if (artistsPager.artists.total < 1)  {
+                        if (mArtistList.isEmpty()) {
                             Toast.makeText(
                                     getActivity(),
                                     getString(R.string.artist_list_empty),
                                     Toast.LENGTH_SHORT)
                                     .show();
                         } else {
-                            mArtistAdapter.addAll(artistsPager.artists.items);
+                            mArtistAdapter.addAll(mArtistList);
                         }
 
                     }
@@ -213,23 +253,47 @@ public class ArtistSearchFragment extends Fragment {
     }
 
     /*
+     * Converts a list of artists to a list of ArtistData.  For each Artist, the
+     * ArtistData object will receive the one URL for the icon image that we'll use.
+     */
+    private ArrayList<ArtistData> convertToArtistData(Pager<Artist> artists) {
+
+        ArrayList<ArtistData> artistDataList = new ArrayList<>();
+
+        if (artists != null) {
+
+            for (Artist artist : artists.items) {
+
+                Image i = ImageUtils.getClosestImageSize(artist.images, idealIconWidth,
+                        idealIconHeight);
+
+                String iconUrl = (i == null) ? null : i.url;
+
+                artistDataList.add(new ArtistData(artist, iconUrl));
+            }
+        }
+
+        return artistDataList;
+
+    }
+
+    /*
      * An ArrayAdapter customized to populate the layout with artist data.
      */
-    class ArtistAdapter extends ArrayAdapter<Artist> {
+    class ArtistAdapter extends ArrayAdapter<ArtistData> {
 
         private class ViewData {
             ImageView icon;
             TextView name;
         }
 
-
-        public ArtistAdapter(List<Artist> objects) {
+        public ArtistAdapter(List<ArtistData> objects) {
             super(getActivity(), 0, objects);
         }
 
         /*
          * An ArrayAdapter requires that we write the results to an EditText field.
-         * By overriding the getView method, we can insert the artist data into
+         * By overriding the getView() method, we can insert the artist data into
          * the fields that we define.
          */
         @Override
@@ -245,7 +309,8 @@ public class ArtistSearchFragment extends Fragment {
              */
             if (view == null) {
 
-                view = getActivity().getLayoutInflater().inflate(R.layout.list_item_artist, null);
+                view = getActivity().getLayoutInflater().inflate(
+                        R.layout.list_item_artist, null);
 
                 viewData = new ViewData();
                 viewData.icon = (ImageView) view.findViewById(R.id.image_artist_icon);
@@ -258,26 +323,16 @@ public class ArtistSearchFragment extends Fragment {
             }
 
 
-            Artist artist = getItem(position);
-
-            int idealWidth = (int) getContext().getResources().getDimension(R.dimen.icon_width);
-            int idealHeight = (int) getContext().getResources().getDimension(R.dimen.icon_height);
+            ArtistData artist = getItem(position);
 
             if (artist != null) {
-                viewData.name.setText(artist.name);
-
-                /*
-                 * Determines which of the images in the array is closest in size to
-                 * what we're looking for.
-                 */
-                Image image = ImageUtils.getClosestImageSize(
-                        artist.images, idealWidth, idealHeight);
+                viewData.name.setText(artist.getName());
 
                 // Fetch the image and store in ViewData object's icon.
-                if (image != null) {
+                if (artist.getUrl() != null) {
                     Picasso.with(getContext())
-                            .load(image.url)
-                            .resize(idealWidth, idealHeight)
+                            .load(artist.getUrl())
+                            .resize(idealIconWidth, idealIconHeight)
                             .into(viewData.icon);
                 }
             }

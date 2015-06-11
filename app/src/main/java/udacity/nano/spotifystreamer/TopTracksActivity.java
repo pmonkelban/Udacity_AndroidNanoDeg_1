@@ -1,10 +1,7 @@
-package udacity.nano.spotifystreamer.activities;
+package udacity.nano.spotifystreamer;
 
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-
-import udacity.nano.spotifystreamer.R;
-import udacity.nano.spotifystreamer.TopTracksFragment;
 
 /*
  * This activity is called when a user selects an artist.
@@ -19,11 +16,5 @@ public class TopTracksActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_top_tracks);
 
-        if (savedInstanceState == null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .add(R.id.layout_top_tracks, new TopTracksFragment())
-                    .commit();
-        }
     }
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpotifyStreamer</string>
+    <string name="app_name">Spotify Streamer</string>
 
     <string name="enter_artist_name">Enter Artist\'s Name</string>
     <string name="action_settings">Settings</string>
@@ -10,7 +10,7 @@
 
     <string name="search">Search</string>
     <string name="no_search_string">Please enter the name of an artist</string>
-    <string name="title_activity_top_tracks">TopTracksActivity</string>
+    <string name="title_activity_top_tracks">Top Tracks</string>
 
     <string name="error_fetching_artists">Error retreiving list of Artists</string>
     <string name="error_fetching_tracks">Error retreiving list of Tracks</string>

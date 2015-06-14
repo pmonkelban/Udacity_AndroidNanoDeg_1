@@ -1,0 +1,68 @@
+- Content Provider URIs:
+
+Given a query, returns all the artists that match that query.
+ARTIST_SEARCH_RESULTS:
+CONTENT://udacity.nano.spotifystreamer/artistSearch/[query]
+
+Contains the data for the specified artist.
+ARTIST:
+CONTENT://udacity.nano.spotifystreamer/artist/[artist_id]
+
+Given an artist's id, returns the top tracks associated with that artist.
+TRACK_SEARCH_RESULTS:
+CONTENT://udacity.nano.spotifystreamer/trackSearch/[artist_id]
+
+Contains the data for the specified track.
+TRACK:
+CONTENT://udacity.nano.spotifystreamer/track/[track_id]
+
+
+
+
+
+
+
+
+
+
+
+- Database Tables:
+
+The following SQLite database tables are used to store artist query results.  This allows the
+application to maintain state when stopped, or when the configuration changes (i.e. screen
+rotation).  The database also servers as a cache.  Recent results can be pulled from the database,
+thus reducing the need to fetch data from the network.  The createTime timestamp provides
+a mechanism for keeping the size of the database in check.  On each insert, the application can
+delete entries that are older than a specified item.
+
+Query:
+*query - String
+
+Query_Artist:
+*query - String - FK_Query
+*artistId - String - FK_Artist
+createTime - Timestamp
+
+Artist:
+spotifyId - String
+name - String
+icon - URL String
+createTime - Timestamp
+
+Track:
+*spotifyId - String
+artistId - String - FK_Artist
+name - String
+album - String
+duration - long
+explicit - boolean
+playable - boolean
+popularity - int
+previewURL - String
+icon - URL String
+(currentPosition - Long)???
+createTime - Timestamp
+
+
+- Caching Strategy
+

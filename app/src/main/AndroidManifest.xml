@@ -11,13 +11,8 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
 
-        <!--
-        Without android:launchMode="singleTop" the savedInstanceState
-        Bundle is always null when onCreate(), onCreateView(), and
-        onActiviteCreated() in ArtistSearchFragment.
-        -->
         <activity
-            android:name=".ArtistSearchActivity"
+            android:name=".MainActivity"
             android:label="@string/app_name"
             android:launchMode="singleTop">
             <intent-filter>
@@ -29,10 +24,10 @@
         <activity
             android:name=".TopTracksActivity"
             android:label="@string/title_activity_top_tracks"
-            android:parentActivityName=".ArtistSearchActivity" >
+            android:parentActivityName=".MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".ArtistSearchActivity" />
+                android:value=".MainActivity" />
         </activity>
     </application>
 

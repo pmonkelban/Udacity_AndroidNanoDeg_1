@@ -104,10 +104,10 @@ public class ArtistSearchFragment extends Fragment {
          * Inflate the view which contains the text field for entering the artist
          * query, and the ListView which displays the results.
          */
-        View view = inflater.inflate(R.layout.fragment_artist_search, container, false);
+        View view = inflater.inflate(R.layout.artist_search, container, false);
 
         // Create a new Adapter and bind it to the ListView
-        ListView artistListView = (ListView) view.findViewById(R.id.listview_artists);
+        ListView artistListView = (ListView) view.findViewById(R.id.artist_search_listView);
 
         if ((savedInstanceState != null) &&
                 (savedInstanceState.containsKey(BUNDLE_KEY_ARTIST_LIST))) {
@@ -140,7 +140,7 @@ public class ArtistSearchFragment extends Fragment {
         });
 
         // The field where the user enters the artist they're looking for.
-        mArtistSearchText = (SearchView) view.findViewById(R.id.text_artist_search);
+        mArtistSearchText = (SearchView) view.findViewById(R.id.artist_search_searchView);
 
         /*
          * Sets a listener on the SearchView that kicks off fetchArtists() when the

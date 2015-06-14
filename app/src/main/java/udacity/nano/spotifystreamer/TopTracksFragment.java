@@ -105,7 +105,7 @@ public class TopTracksFragment extends Fragment {
         /*
          * Inflate the view that contains the top tracks ListView.
          */
-        View view = inflater.inflate(R.layout.fragment_track_list, container, false);
+        View view = inflater.inflate(R.layout.track_list, container, false);
 
         // Create a new Adapter and bind it to the ListView
         ListView trackListView = (ListView) view.findViewById(R.id.listview_tracks);

@@ -13,15 +13,14 @@ public class StreamerContract {
     public static final String PATH_GET_ARTISTS = "getArtists";
     public static final String PATH_GET_TRACKS = "getTracks";
 
-    public static final String GET_ARTISTS_CONTENT_TYPE =
-            ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_GET_ARTISTS;
-
     public static final Uri GET_ARTISTS_CONTENT_URI =
             BASE_CONTENT_URI.buildUpon().appendPath(PATH_GET_ARTISTS).build();
 
     public static final Uri GET_TRACKS_CONTENT_URI =
             BASE_CONTENT_URI.buildUpon().appendPath(PATH_GET_TRACKS).build();
 
+    public static final String GET_ARTISTS_CONTENT_TYPE =
+            ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_GET_ARTISTS;
 
     public static final String GET_TRACKS_CONTENT_TYPE =
             ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_GET_TRACKS;

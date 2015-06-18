@@ -11,7 +11,6 @@ import android.util.Log;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +27,6 @@ import kaaes.spotify.webapi.android.models.Pager;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import udacity.nano.spotifystreamer.R;
-import udacity.nano.spotifystreamer.model.ArtistData;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
@@ -39,6 +37,10 @@ public class StreamerProvider extends ContentProvider {
 
     private StreamerDbHelper mDbHelper;
 
+    /*
+    * Constants used by the matcher and query method to determine
+    * what type of query to execute.
+    */
     static final int GET_ARTISTS = 100;
     static final int GET_TRACKS = 200;
 
@@ -84,6 +86,10 @@ public class StreamerProvider extends ContentProvider {
 
         sArtistsByQuery = new SQLiteQueryBuilder();
 
+        /*
+        * Joins a Query to the set of Artists that match that query using the query_artist
+        * join table.
+        */
         sArtistsByQuery.setTables(
                 StreamerContract.QueryEntry.TABLE_NAME +
                         " INNER JOIN " +
@@ -102,6 +108,9 @@ public class StreamerProvider extends ContentProvider {
 
         sTracksByArtist = new SQLiteQueryBuilder();
 
+        /*
+        * Get the tracks associated with an artist.
+        */
         sTracksByArtist.setTables(
                 StreamerContract.ArtistEntry.TABLE_NAME +
                         " INNER JOIN " +
@@ -194,7 +203,7 @@ public class StreamerProvider extends ContentProvider {
         Cursor cursor = sArtistsByQuery.query(
                 db,
                 null,
-                StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + "=?",
+                StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
                 new String[]{query},
                 null,
                 null,
@@ -249,7 +258,7 @@ public class StreamerProvider extends ContentProvider {
 
                     db.delete(
                             StreamerContract.ArtistQuery.TABLE_NAME,
-                            StreamerContract.ArtistQuery.COLUMN_QUERY_ID + "=?",
+                            StreamerContract.ArtistQuery.COLUMN_QUERY_ID + " = ?",
                             new String[]{"" + queryId}
                     );
 
@@ -258,7 +267,7 @@ public class StreamerProvider extends ContentProvider {
                     */
                     db.delete(
                             StreamerContract.QueryEntry.TABLE_NAME,
-                            StreamerContract.QueryEntry._ID + "=?",
+                            StreamerContract.QueryEntry._ID + " = ?",
                             new String[]{"" + queryId}
                     );
 
@@ -301,6 +310,10 @@ public class StreamerProvider extends ContentProvider {
         values.put(StreamerContract.QueryEntry.COLUMN_CREATE_TIME, dateFormatter.format(new Date()));
         long queryRecordId = db.insert(StreamerContract.QueryEntry.TABLE_NAME, null, values);
 
+        if (queryRecordId < 0)  {
+            throw new android.database.SQLException("Error creating query record. query:" + query);
+        }
+
        /*
        * For Each Returned Artist
        */
@@ -325,13 +338,22 @@ public class StreamerProvider extends ContentProvider {
 
             long artistRecordId = db.insert(StreamerContract.ArtistEntry.TABLE_NAME, null, values);
 
+            if (artistRecordId < 0)  {
+                throw new android.database.SQLException(
+                        "Error creating Artist record.  artistId:" + artist.id);
+            }
+
             /*
             * Create ArtistQuery Record.
             */
             values = new ContentValues();
             values.put(StreamerContract.ArtistQuery.COLUMN_QUERY_ID, queryRecordId);
             values.put(StreamerContract.ArtistQuery.COLUMN_ARTIST_ID, artistRecordId);
-            db.insert(StreamerContract.ArtistQuery.TABLE_NAME, null, values);
+            if (db.insert(StreamerContract.ArtistQuery.TABLE_NAME, null, values) < 0)  {
+                throw new android.database.SQLException(
+                        "Error creating query_artist record. queryRecordId:" + queryRecordId +
+                                " artistRecordId:" + artistRecordId);
+            }
 
             if (n < NUM_RESULTS_TO_PRE_FETCH_TRACKS) {
                 getTracks(artistRecordId, artist.id, db, cacheCutOffTime);
@@ -348,7 +370,7 @@ public class StreamerProvider extends ContentProvider {
         cursor = sArtistsByQuery.query(
                 db,
                 null,
-                StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + "=?",
+                StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
                 new String[]{query},
                 null,
                 null,
@@ -358,6 +380,9 @@ public class StreamerProvider extends ContentProvider {
 
     }
 
+    /*
+    * Removes all queries that are older than cacheCutOffTime.
+    */
     private void flushArtistCache(SQLiteDatabase db, Date cacheCutOffTime) {
 
         Cursor cursor = null;
@@ -371,6 +396,9 @@ public class StreamerProvider extends ContentProvider {
 
         try {
 
+            /*
+            * Get expired entries in the query table.
+            */
             cursor = db.query(
                     StreamerContract.QueryEntry.TABLE_NAME,
                     new String[]{StreamerContract.QueryEntry._ID},
@@ -392,7 +420,7 @@ public class StreamerProvider extends ContentProvider {
                     */
                     db.delete(
                             StreamerContract.ArtistQuery.TABLE_NAME,
-                            StreamerContract.ArtistQuery.COLUMN_QUERY_ID + "=?",
+                            StreamerContract.ArtistQuery.COLUMN_QUERY_ID + " = ?",
                             new String[]{"" + queryId}
                     );
 
@@ -401,7 +429,7 @@ public class StreamerProvider extends ContentProvider {
                     */
                     db.delete(
                             StreamerContract.QueryEntry.TABLE_NAME,
-                            StreamerContract.QueryEntry._ID + "=?",
+                            StreamerContract.QueryEntry._ID + " = ?",
                             new String[]{"" + queryId}
                     );
 
@@ -433,7 +461,7 @@ public class StreamerProvider extends ContentProvider {
                 */
                     db.delete(
                             StreamerContract.TrackEntry.TABLE_NAME,
-                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + "=?",
+                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " = ?",
                             new String[]{"" + artistId}
                     );
 
@@ -442,7 +470,7 @@ public class StreamerProvider extends ContentProvider {
                 */
                     db.delete(
                             StreamerContract.ArtistEntry.TABLE_NAME,
-                            StreamerContract.ArtistEntry._ID + "=?",
+                            StreamerContract.ArtistEntry._ID + " = ?",
                             new String[]{"" + artistId}
                     );
 
@@ -496,7 +524,7 @@ public class StreamerProvider extends ContentProvider {
         Cursor  cursor = db.query(
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 new String[] {StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED},
-                StreamerContract.ArtistEntry._ID + "=?",
+                StreamerContract.ArtistEntry._ID + " = ?",
                 new String[]{"" + artistId},
                 null,
                 null,
@@ -566,7 +594,7 @@ public class StreamerProvider extends ContentProvider {
                     */
                     db.delete(
                             StreamerContract.TrackEntry.TABLE_NAME,
-                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + "=?",
+                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " = ?",
                             new String[]{"" + artistId}
                     );
 
@@ -581,7 +609,7 @@ public class StreamerProvider extends ContentProvider {
                     return sTracksByArtist.query(
                             db,
                             null,
-                            StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + "=?",
+                            StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + " = ?",
                             new String[]{"" + artistId},
                             null,
                             null,
@@ -596,7 +624,7 @@ public class StreamerProvider extends ContentProvider {
                 return sTracksByArtist.query(
                         db,
                         null,
-                        StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + "=?",
+                        StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + " = ?",
                         new String[]{"" + artistId},
                         null,
                         null,
@@ -635,7 +663,9 @@ public class StreamerProvider extends ContentProvider {
 
             values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
 
-            db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values);
+            if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0)  {
+               throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
+            }
         }
 
         /*
@@ -647,7 +677,7 @@ public class StreamerProvider extends ContentProvider {
         db.update(
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 values,
-                StreamerContract.ArtistEntry._ID + "=?",
+                StreamerContract.ArtistEntry._ID + " = ?",
                 new String[] {"" + artistId}
         );
 
@@ -662,7 +692,7 @@ public class StreamerProvider extends ContentProvider {
         return sTracksByArtist.query(
                 db,
                 null,
-                StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + "=?",
+                StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + " = ?",
                 new String[]{"" + artistId},
                 null,
                 null,
@@ -671,7 +701,7 @@ public class StreamerProvider extends ContentProvider {
     }
 
     /*
-    * Remove Track entries for all Artists where Artist.tracksLastUpdate is older than
+    * Removes Track entries for all Artists where Artist.tracksLastUpdate is older than
     * cacheCutOffTime.
     */
     private void flushTrackCache(SQLiteDatabase db, Date cacheCutOffTime) {
@@ -711,7 +741,7 @@ public class StreamerProvider extends ContentProvider {
                     */
                     db.delete(
                             StreamerContract.TrackEntry.TABLE_NAME,
-                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + "=?",
+                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " = ?",
                             new String[]{"" + artistId}
                     );
 
@@ -725,7 +755,7 @@ public class StreamerProvider extends ContentProvider {
                     db.update(
                             StreamerContract.ArtistEntry.TABLE_NAME,
                             values,
-                            StreamerContract.ArtistEntry._ID + "=?",
+                            StreamerContract.ArtistEntry._ID + " = ?",
                             new String[]{"" + artistId}
                     );
 
@@ -752,14 +782,19 @@ public class StreamerProvider extends ContentProvider {
         switch (match) {
             case GET_ARTISTS:
                 return StreamerContract.GET_ARTISTS_CONTENT_TYPE;
+
             case GET_TRACKS:
                 return StreamerContract.GET_TRACKS_CONTENT_TYPE;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
     }
 
+    /*
+    * Insert operation is not currently supported.
+    */
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         throw new UnsupportedOperationException("Direct Inserts Unsupported uri: " + uri);
@@ -782,33 +817,12 @@ public class StreamerProvider extends ContentProvider {
         return rowsDeleted;
     }
 
+    /*
+    * Update operation is not currently supported.
+    */
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         throw new UnsupportedOperationException("Direct Updates Unsupported uri: " + uri);
     }
 
-    /*
-    * Converts a list of artists to a list of ArtistData.  For each Artist, the
-    * ArtistData object will receive the one URL for the icon image that we'll use.
-    */
-    private ArrayList<ArtistData> convertToArtistData(Pager<Artist> artists) {
-
-        ArrayList<ArtistData> artistDataList = new ArrayList<>();
-
-        if (artists != null) {
-
-            for (Artist artist : artists.items) {
-
-                Image i = ImageUtils.getClosestImageSize(artist.images, idealIconWidth,
-                        idealIconHeight);
-
-                String iconUrl = (i == null) ? null : i.url;
-
-                artistDataList.add(new ArtistData(artist, iconUrl));
-            }
-        }
-
-        return artistDataList;
-
-    }
 }

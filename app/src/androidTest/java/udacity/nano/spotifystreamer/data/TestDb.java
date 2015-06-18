@@ -80,5 +80,4 @@ public class TestDb extends AndroidTestCase {
         return sb.toString();
     }
 
-    public void test
-}
+ }

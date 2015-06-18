@@ -1,24 +1,10 @@
 - Content Provider URIs:
 
-Given a query, returns all the artists that match that query.
-ARTIST_SEARCH_RESULTS:
-CONTENT://udacity.nano.spotifystreamer/artistSearch/[query]
+-- Get all artists that match query string
+CONTENT://udacity.nano.spotifystreamer/getArtists/[string]
 
-Contains the data for the specified artist.
-ARTIST:
-CONTENT://udacity.nano.spotifystreamer/artist/[artist_id]
-
-Given an artist's id, returns the top tracks associated with that artist.
-TRACK_SEARCH_RESULTS:
-CONTENT://udacity.nano.spotifystreamer/trackSearch/[artist_id]
-
-Contains the data for the specified track.
-TRACK:
-CONTENT://udacity.nano.spotifystreamer/track/[track_id]
-
-
-
-
+-- Get the Top Tracks for the given artist
+CONTENT://udacity.nano.spotifystreamer/getTracks/[string]
 
 
 
@@ -66,3 +52,4 @@ createTime - Timestamp
 
 - Caching Strategy
 
+See CacheArtistFlowChart.pdf and CacheTopTracksFlowChart.pdf

@@ -29,6 +29,11 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
         </activity>
+
+        <provider
+            android:authorities="udacity.nano.spotifystreamer"
+            android:name=".data.StreamerProvider" />
+
     </application>
 
 </manifest>

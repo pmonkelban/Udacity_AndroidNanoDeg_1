@@ -9,7 +9,7 @@ import android.test.AndroidTestCase;
 public class TestProvider extends AndroidTestCase {
 
 
-    public static final String TAG = TestProvider.class.getSimpleName();
+    public static final String TAG = TestProvider.class.getCanonicalName();
 
     public void deleteAllRecordsFromProvider() {
 
@@ -64,12 +64,12 @@ public class TestProvider extends AndroidTestCase {
 
         Cursor cursor;
 
-//        mContext.getContentResolver().query(
-//                StreamerContract.GET_ARTISTS_CONTENT_URI.buildUpon().appendEncodedPath("U2").build(),
-//                null,
-//                null,
-//                null,
-//                null);
+        mContext.getContentResolver().query(
+                StreamerContract.GET_ARTISTS_CONTENT_URI.buildUpon().appendEncodedPath("U2").build(),
+                null,
+                null,
+                null,
+                null);
 //
 //        mContext.getContentResolver().query(
 //                StreamerContract.GET_ARTISTS_CONTENT_URI.buildUpon().appendEncodedPath("Metallica").build(),
@@ -85,14 +85,14 @@ public class TestProvider extends AndroidTestCase {
 //                null,
 //                null);
 
-        cursor = mContext.getContentResolver().query(
-                StreamerContract.GET_ARTISTS_CONTENT_URI.buildUpon().appendEncodedPath("Anthrax").build(),
-                null,
-                null,
-                null,
-                null);
+//        cursor = mContext.getContentResolver().query(
+//                StreamerContract.GET_ARTISTS_CONTENT_URI.buildUpon().appendEncodedPath("Anthrax").build(),
+//                null,
+//                null,
+//                null,
+//                null);
 
-        assertEquals(9, cursor.getCount());
+//        assertEquals(9, cursor.getCount());
 
     }
 

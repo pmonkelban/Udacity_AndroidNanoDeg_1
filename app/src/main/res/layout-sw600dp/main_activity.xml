@@ -8,16 +8,31 @@
     tools:context="udacity.nano.spotifystreamer.MainActivity"
     android:baselineAligned="false">
 
-    <fragment
-        android:id="@id/artist_search"
-        android:name="udacity.nano.spotifystreamer.ArtistSearchFragment"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        tools:layout="@android:layout/list_content"/>
+        android:orientation="vertical">
+
+        <android.support.v7.widget.SearchView
+            android:id="@+id/artist_search_searchView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            app:iconifiedByDefault="false"
+            app:queryHint="@string/enter_artist_name" />
+
+        <FrameLayout
+            android:id="@+id/artist_list_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
     <FrameLayout
-        android:id="@+id/track_list"
+        android:id="@+id/track_list_container"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1" />

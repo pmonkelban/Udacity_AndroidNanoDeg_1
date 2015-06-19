@@ -42,7 +42,7 @@ public class StreamerDbHelper extends SQLiteOpenHelper {
                 "CREATE TABLE " + TrackEntry.TABLE_NAME + " (" +
                 TrackEntry._ID + " INTEGER PRIMARY KEY, " +
                 TrackEntry.COLUMN_ARTIST_ID + " INTEGER NOT NULL, " +
-                TrackEntry.COLUMN_SPOTIFY_ID + " TEXT UNIQUE NOT NULL, " +
+                TrackEntry.COLUMN_SPOTIFY_ID + " TEXT NOT NULL, " +
                 TrackEntry.COLUMN_TITLE + " TEXT NOT NULL, " +
                 TrackEntry.COLUMN_ALBUM + " TEXT NOT NULL, " +
                 TrackEntry.COLUMN_DURATION + " REAL NOT NULL, " +

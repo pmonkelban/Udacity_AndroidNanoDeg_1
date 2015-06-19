@@ -31,7 +31,7 @@ import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
 
-    private static final String TAG = StreamerProvider.class.getSimpleName();
+    private static final String TAG = StreamerProvider.class.getCanonicalName();
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
 
@@ -179,6 +179,7 @@ public class StreamerProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
+        retCursor.setNotificationUri(getContext().getContentResolver(), uri);
         return retCursor;
     }
 

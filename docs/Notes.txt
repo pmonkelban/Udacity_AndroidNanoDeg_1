@@ -1,3 +1,12 @@
+== TO DO ==
+- Update query for artist so that it also caches the top tracks for the first N artists returned.
+- Add preferences for the following:
+  -- Allow Explicit Lyrics
+  -- Cache lifetime (1 hour, 6 hours, etc.)
+- Change cache expiration logic to use Calendar instead of Date.
+- Make sure track table does not have the artist's spotifyId. Use the _id foreign key.
+
+
 - Content Provider URIs:
 
 -- Get all artists that match query string

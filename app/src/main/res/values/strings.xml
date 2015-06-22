@@ -15,4 +15,6 @@
     <string name="error_fetching_artists">Error retreiving list of Artists</string>
     <string name="error_fetching_tracks">Error retreiving list of Tracks</string>
 
+    <string name="spotify_streamer_running">Spotify Streamer is Running</string>
+
 </resources>

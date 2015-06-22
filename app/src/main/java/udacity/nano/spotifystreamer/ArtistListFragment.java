@@ -44,7 +44,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
 
     public interface Callback  {
-        public void onArtistSelected(Uri trackListUri);
+        void onArtistSelected(Uri trackListUri);
     }
 
     public ArtistListFragment() {

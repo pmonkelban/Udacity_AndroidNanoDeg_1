@@ -1,8 +1,13 @@
 package udacity.nano.spotifystreamer;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -10,7 +15,10 @@ import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
+
+import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 
 public class TopTracksFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -38,10 +46,23 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
 
     private static final int TRACK_LOADER_ID = 1;
 
+    StreamerMediaService mStreamerService;
+    boolean isStreamerServiceBound = false;
 
-    public interface Callback {
-        public void onTrackSelected(Uri trackUri);
-    }
+    private ServiceConnection mStreamerServiceConnection = new ServiceConnection()  {
+
+        public void onServiceConnected(ComponentName className, IBinder service)  {
+            StreamerMediaService.StreamerMediaServiceBinder binder =
+                    (StreamerMediaService.StreamerMediaServiceBinder) service;
+            mStreamerService = binder.getService();
+            isStreamerServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isStreamerServiceBound = false;
+        }
+    };
 
     /*
      * No arg Constructor.
@@ -55,12 +76,14 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
 
         super.onCreate(savedInstanceState);
 
-        Bundle bundle = this.getArguments();
-
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
+        Intent intent = new Intent(getActivity(), StreamerMediaService.class);
+        isStreamerServiceBound = getActivity().bindService(intent, mStreamerServiceConnection, Context.BIND_AUTO_CREATE);
+
     }
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -92,6 +115,31 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
         // Create a new Adapter and bind it to the ListView
         mListView = (ListView) rootView.findViewById(R.id.listview_tracks);
         mListView.setAdapter(mTrackAdapter);
+
+         /*
+         * Detect when a list view item (an artist) is clicked, and launch
+         * and intent passing the artist's id as an extra.
+         */
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+
+                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
+
+                /*
+                * Must make sure that isStreamerServiceBound is true.  It's possible that
+                * ServiceConnection.onServiceConnected() callback hasn't happened yet, in
+                * which case mStreamerService will be null.
+                */
+                if ((cursor != null) && (isStreamerServiceBound)) {
+                    String previewURL = cursor.getString(TopTracksAdapter.IDX_PREVIEW_URL);
+                    mStreamerService.play(Uri.parse(previewURL));
+                }
+
+                mPosition = position;
+            }
+        });
 
         // Read last search and last position from the saved state
         if (savedInstanceState != null)  {

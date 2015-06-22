@@ -16,9 +16,9 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
  * Kicks off ArtistListFragment
  */
 public class MainActivity extends ActionBarActivity
-        implements ArtistListFragment.Callback, TopTracksFragment.Callback  {
+        implements ArtistListFragment.Callback  {
 
-    private static final String TAG = MainActivity.class.getCanonicalName();
+    private final String TAG = getClass().getCanonicalName();
 
     private boolean mIsTwoPanel = false;
 
@@ -168,10 +168,5 @@ public class MainActivity extends ActionBarActivity
             intent.setData(trackListUri);
             startActivity(intent);
         }
-    }
-
-    @Override
-    public void onTrackSelected(Uri trackUri) {
-        Log.d(TAG, "Track Selected.  trackId:" + trackUri);
     }
 }

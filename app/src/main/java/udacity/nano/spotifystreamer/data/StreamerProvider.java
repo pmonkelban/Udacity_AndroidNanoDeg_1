@@ -53,8 +53,8 @@ public class StreamerProvider extends ContentProvider {
     private int idealIconWidth;
     private int idealIconHeight;
 
-    //    private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours ( * 0 -> fetch everything)
-    private static final long MAX_CACHE_TIME = 1000 * 60; // 1 minute (for testing)
+    private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours ( * 0 -> fetch everything)
+//    private static final long MAX_CACHE_TIME = 1000 * 60; // 1 minute (for testing)
 
 
     // Used for reading and writing dates to and from the database.  Note all times are in UTC.
@@ -199,20 +199,22 @@ public class StreamerProvider extends ContentProvider {
 
         final Pager<Artist> pager;
 
-        final String query = uri.getLastPathSegment().toLowerCase();
+        final String query = uri.getLastPathSegment().toLowerCase().trim();
 
-        Cursor cursor = sArtistsByQuery.query(
-                db,
+        Cursor cursor;
+
+        /*
+        * Does a record exist in the Query table matching this request?
+        */
+        cursor = db.query(
+                StreamerContract.QueryEntry.TABLE_NAME,
                 null,
-                StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
+                StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
                 new String[]{query},
                 null,
                 null,
                 null);
 
-        /*
-        * Does a record exist in the Query table matching this request?
-        */
         if (cursor.moveToFirst()) {
 
             Log.d(TAG, "Record exists in Query table for query: " + query);
@@ -220,7 +222,6 @@ public class StreamerProvider extends ContentProvider {
             /*
             * Has the Query record expired?
             */
-
             Date queryCreateTime;
 
             try {
@@ -233,14 +234,32 @@ public class StreamerProvider extends ContentProvider {
             } catch (ParseException e) {
 
                 Log.e(TAG, "Error parsing create date for query: " + query);
+
+                /*
+                * If there's an error parsing the time stamp, this will default
+                * to refreshing the data.
+                */
                 queryCreateTime = null;
             }
 
+            // Finished query of Query table.
+            cursor.close();
+
             if ((queryCreateTime != null) && (queryCreateTime.after(cacheCutOffTime))) {
                 Log.d(TAG, "Cache hit for query: " + query);
-                return cursor;
+
+                // Fetch Artists matching the query.
+                return sArtistsByQuery.query(
+                        db,
+                        null,
+                        StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
+                        new String[]{query},
+                        null,
+                        null,
+                        null);
 
             } else {
+
                 Log.d(TAG, "Cache stale for query:" + query);
 
                 try {
@@ -288,6 +307,8 @@ public class StreamerProvider extends ContentProvider {
 
             Log.d(TAG, "Record does not exist in Query table for query: " + query);
 
+            cursor.close();
+
             try {
                 ArtistsPager artistPager = mSpotifyService.searchArtists(query);
                 pager = artistPager.artists;
@@ -311,7 +332,7 @@ public class StreamerProvider extends ContentProvider {
         values.put(StreamerContract.QueryEntry.COLUMN_CREATE_TIME, dateFormatter.format(new Date()));
         long queryRecordId = db.insert(StreamerContract.QueryEntry.TABLE_NAME, null, values);
 
-        if (queryRecordId < 0)  {
+        if (queryRecordId < 0) {
             throw new android.database.SQLException("Error creating query record. query:" + query);
         }
 
@@ -339,7 +360,7 @@ public class StreamerProvider extends ContentProvider {
 
             long artistRecordId = db.insert(StreamerContract.ArtistEntry.TABLE_NAME, null, values);
 
-            if (artistRecordId < 0)  {
+            if (artistRecordId < 0) {
                 throw new android.database.SQLException(
                         "Error creating Artist record.  artistId:" + artist.id);
             }
@@ -350,7 +371,7 @@ public class StreamerProvider extends ContentProvider {
             values = new ContentValues();
             values.put(StreamerContract.ArtistQuery.COLUMN_QUERY_ID, queryRecordId);
             values.put(StreamerContract.ArtistQuery.COLUMN_ARTIST_ID, artistRecordId);
-            if (db.insert(StreamerContract.ArtistQuery.TABLE_NAME, null, values) < 0)  {
+            if (db.insert(StreamerContract.ArtistQuery.TABLE_NAME, null, values) < 0) {
                 throw new android.database.SQLException(
                         "Error creating query_artist record. queryRecordId:" + queryRecordId +
                                 " artistRecordId:" + artistRecordId);
@@ -368,7 +389,8 @@ public class StreamerProvider extends ContentProvider {
         /*
         * Return List of Artists.
         */
-        cursor = sArtistsByQuery.query(
+
+        return sArtistsByQuery.query(
                 db,
                 null,
                 StreamerContract.QueryEntry.TABLE_NAME + "." + StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
@@ -377,16 +399,12 @@ public class StreamerProvider extends ContentProvider {
                 null,
                 null);
 
-        return cursor;
-
     }
 
     /*
     * Removes all queries that are older than cacheCutOffTime.
     */
     private void flushArtistCache(SQLiteDatabase db, Date cacheCutOffTime) {
-
-        Cursor cursor = null;
 
         /*
         * Begin cleaning up expired records in the cache.
@@ -398,92 +416,56 @@ public class StreamerProvider extends ContentProvider {
         try {
 
             /*
-            * Get expired entries in the query table.
+            * Delete ArtistQuery records where the related Query has expired.
             */
-            cursor = db.query(
+            db.delete(
+                    StreamerContract.ArtistQuery.TABLE_NAME,
+                    StreamerContract.ArtistQuery.COLUMN_QUERY_ID + " IN (SELECT " +
+                            StreamerContract.QueryEntry._ID + " FROM " +
+                            StreamerContract.QueryEntry.TABLE_NAME + " WHERE " +
+                            StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?)",
+                    new String[]{cacheCutOffTimeStr}
+            );
+
+            /*
+            * Delete Query records that have expired.
+            */
+            db.delete(
                     StreamerContract.QueryEntry.TABLE_NAME,
-                    new String[]{StreamerContract.QueryEntry._ID},
                     StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?",
-                    new String[]{cacheCutOffTimeStr},
-                    null,
-                    null,
-                    null);
+                    new String[]{cacheCutOffTimeStr}
+            );
 
             /*
-            * For Each expired Query
+            * Delete Tracks for all Artists that no longer have entries in ArtistQuery.
             */
-            if (cursor.moveToFirst()) {
-                while (!cursor.isAfterLast()) {
-                    long queryId = cursor.getLong(cursor.getColumnIndex(StreamerContract.QueryEntry._ID));
-
-                    /*
-                    * Delete QueryArtist Records.
-                    */
-                    db.delete(
-                            StreamerContract.ArtistQuery.TABLE_NAME,
-                            StreamerContract.ArtistQuery.COLUMN_QUERY_ID + " = ?",
-                            new String[]{"" + queryId}
-                    );
-
-                    /*
-                    * Delete Query Record.
-                    */
-                    db.delete(
-                            StreamerContract.QueryEntry.TABLE_NAME,
-                            StreamerContract.QueryEntry._ID + " = ?",
-                            new String[]{"" + queryId}
-                    );
-
-                    cursor.moveToNext();
-                }
-            }
-
-            /*
-            * For Each Artist Not in ArtistQuery.
-            */
-            cursor = db.query(
-                    StreamerContract.ArtistEntry.TABLE_NAME,
-                    new String[]{"_id"},
-                    StreamerContract.ArtistEntry._ID + " NOT IN (SELECT " +
+            db.delete(
+                    StreamerContract.TrackEntry.TABLE_NAME,
+                    StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " IN (SELECT " +
+                            StreamerContract.ArtistEntry._ID + " FROM " +
+                            StreamerContract.ArtistEntry.TABLE_NAME + " WHERE " +
+                            StreamerContract.ArtistEntry._ID + " NOT IN (SELECT " +
                             StreamerContract.ArtistQuery.COLUMN_ARTIST_ID + " FROM " +
-                            StreamerContract.ArtistQuery.TABLE_NAME + ")",
-                    null,
-                    null,
-                    null,
+                            StreamerContract.ArtistQuery.TABLE_NAME + "))",
                     null
             );
 
-            if (cursor.moveToFirst()) {
-                while (!cursor.isAfterLast()) {
-                    long artistId = cursor.getLong(cursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
+            /*
+            * Delete Artists that no longer have entries in ArtistQuery.
+            */
+            db.delete(
+                    StreamerContract.ArtistEntry.TABLE_NAME,
+                    StreamerContract.ArtistEntry._ID + " NOT IN (SELECT " +
+                            StreamerContract.ArtistQuery.COLUMN_ARTIST_ID + " FROM " +
+                            StreamerContract.ArtistQuery.TABLE_NAME + ")",
+                    null
+            );
 
-                /*
-                * Delete Track Records.
-                */
-                    db.delete(
-                            StreamerContract.TrackEntry.TABLE_NAME,
-                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " = ?",
-                            new String[]{"" + artistId}
-                    );
-
-                /*
-                * Delete Artist Record.
-                */
-                    db.delete(
-                            StreamerContract.ArtistEntry.TABLE_NAME,
-                            StreamerContract.ArtistEntry._ID + " = ?",
-                            new String[]{"" + artistId}
-                    );
-
-                    cursor.moveToNext();
-
-                }
-            }
 
             db.setTransactionSuccessful();
 
         } finally {
-            if (cursor != null) cursor.close();
+
             db.endTransaction();
         }
     }
@@ -516,15 +498,15 @@ public class StreamerProvider extends ContentProvider {
 
     private Cursor getTracks(long artistId, String artistSpotifyId, SQLiteDatabase db,
                              Date cacheCutOffTime) {
-        
+
         Log.d(TAG, "getTracks() called. artistId:" + artistId);
 
         /*
         * Get the Artists last tracks updated time.
         */
-        Cursor  cursor = db.query(
+        Cursor cursor = db.query(
                 StreamerContract.ArtistEntry.TABLE_NAME,
-                new String[] {StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED},
+                new String[]{StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED},
                 StreamerContract.ArtistEntry._ID + " = ?",
                 new String[]{"" + artistId},
                 null,
@@ -536,7 +518,7 @@ public class StreamerProvider extends ContentProvider {
         if (cursor.moveToFirst()) {
 
             String tracksLastUpdatedStr = cursor.getString(cursor.getColumnIndex(
-                            StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED));
+                    StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED));
 
             try {
                 if (tracksLastUpdatedStr != null) {
@@ -546,13 +528,15 @@ public class StreamerProvider extends ContentProvider {
                 tracksLastUpdated = null;
             }
         }
-        
+
+        cursor.close();
+
         List<Track> topTracks = null;
         
         /*
         * Is Artist's tracksUpdate NULL?
         */
-        if (tracksLastUpdated == null)  {
+        if (tracksLastUpdated == null) {
 
             try {
 
@@ -572,8 +556,8 @@ public class StreamerProvider extends ContentProvider {
                 Log.e(TAG, "Error: " + e.getMessage());
                 return null;
             }
-            
-        } else  {
+
+        } else {
 
             /*
             * Artist's last Track update expired ?
@@ -617,7 +601,7 @@ public class StreamerProvider extends ContentProvider {
                             null);
                 }
 
-            } else  {
+            } else {
 
                 /*
                 * Return cached list of tracks.
@@ -632,10 +616,10 @@ public class StreamerProvider extends ContentProvider {
                         null);
 
             }
-            
+
         }
 
-        for (Track track : topTracks)  {
+        for (Track track : topTracks) {
 
              /*
             * Create Track data.
@@ -664,8 +648,8 @@ public class StreamerProvider extends ContentProvider {
 
             values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
 
-            if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0)  {
-               throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
+            if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0) {
+                throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
             }
         }
 
@@ -679,7 +663,7 @@ public class StreamerProvider extends ContentProvider {
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 values,
                 StreamerContract.ArtistEntry._ID + " = ?",
-                new String[] {"" + artistId}
+                new String[]{"" + artistId}
         );
 
         /*
@@ -707,8 +691,6 @@ public class StreamerProvider extends ContentProvider {
     */
     private void flushTrackCache(SQLiteDatabase db, Date cacheCutOffTime) {
 
-        Cursor cursor = null;
-
         /*
         * Begin cleaning up expired tracks in the cache.
         */
@@ -719,58 +701,38 @@ public class StreamerProvider extends ContentProvider {
         try {
 
             /*
-            * Get Artists with expired caches
+            * Set the Artist's trackLastUpdated to NULL, if it has expired
             */
-            cursor = db.query(
+            ContentValues values = new ContentValues();
+            values.putNull(StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED);
+
+            db.update(
                     StreamerContract.ArtistEntry.TABLE_NAME,
-                    new String[]{StreamerContract.ArtistEntry._ID},
+                    values,
                     StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED + " < ?",
-                    new String[]{cacheCutOffTimeStr},
-                    null,
-                    null,
-                    null);
+                    new String[]{cacheCutOffTimeStr}
+            );
 
             /*
-            * For Each Expired Artist.tracksLastUpdated.
+            * Delete all tracks where the related Artist's trackLastUpdate is NULL.
             */
-            if (cursor.moveToFirst()) {
-                while (!cursor.isAfterLast()) {
-                    long artistId = cursor.getLong(cursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
+            db.delete(
+                    StreamerContract.TrackEntry.TABLE_NAME,
+                    StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " IN (SELECT " +
+                            StreamerContract.ArtistEntry._ID + " FROM " +
+                            StreamerContract.ArtistEntry.TABLE_NAME + " WHERE " +
+                            StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED +
+                            " IS NULL)",
+                    null
 
-                    /*
-                    * Delete Tracks associated with the current Artist.
-                    */
-                    db.delete(
-                            StreamerContract.TrackEntry.TABLE_NAME,
-                            StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " = ?",
-                            new String[]{"" + artistId}
-                    );
-
-
-                    /*
-                    * Set the Artist's trackLastUpdated to NULL
-                    */
-                    ContentValues values = new ContentValues();
-                    values.putNull(StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED);
-
-                    db.update(
-                            StreamerContract.ArtistEntry.TABLE_NAME,
-                            values,
-                            StreamerContract.ArtistEntry._ID + " = ?",
-                            new String[]{"" + artistId}
-                    );
-
-                    cursor.moveToNext();
-                }
-            }
+            );
 
             db.setTransactionSuccessful();
 
-        } catch (Exception e)  {
+        } catch (Exception e) {
             Log.d(TAG, "Error querying for artists with expired caches: " + e.getMessage());
 
         } finally {
-            if (cursor != null) cursor.close();
             db.endTransaction();
         }
     }
@@ -807,13 +769,23 @@ public class StreamerProvider extends ContentProvider {
     */
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
+
         final SQLiteDatabase db = mDbHelper.getWritableDatabase();
         int rowsDeleted = 0;
 
-        rowsDeleted += db.delete(StreamerContract.TrackEntry.TABLE_NAME, null, null);
-        rowsDeleted += db.delete(StreamerContract.ArtistQuery.TABLE_NAME, null, null);
-        rowsDeleted += db.delete(StreamerContract.QueryEntry.TABLE_NAME, null, null);
-        rowsDeleted += db.delete(StreamerContract.ArtistEntry.TABLE_NAME, null, null);
+        try {
+            db.beginTransaction();
+
+            rowsDeleted += db.delete(StreamerContract.TrackEntry.TABLE_NAME, null, null);
+            rowsDeleted += db.delete(StreamerContract.ArtistQuery.TABLE_NAME, null, null);
+            rowsDeleted += db.delete(StreamerContract.QueryEntry.TABLE_NAME, null, null);
+            rowsDeleted += db.delete(StreamerContract.ArtistEntry.TABLE_NAME, null, null);
+
+            db.setTransactionSuccessful();
+
+        } finally {
+            db.endTransaction();
+        }
 
         return rowsDeleted;
     }

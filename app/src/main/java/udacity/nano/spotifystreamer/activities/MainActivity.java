@@ -1,29 +1,29 @@
-package udacity.nano.spotifystreamer;
+package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import udacity.nano.spotifystreamer.ArtistListFragment;
+import udacity.nano.spotifystreamer.R;
+import udacity.nano.spotifystreamer.TrackListFragment;
 import udacity.nano.spotifystreamer.data.StreamerContract;
 
 /*
  * The app's main activity.
  * Kicks off ArtistListFragment
  */
-public class MainActivity extends ActionBarActivity
-        implements ArtistListFragment.Callback  {
+public class MainActivity extends SpotifyStreamerActivity
+        implements ArtistListFragment.Callback {
 
     private final String TAG = getClass().getCanonicalName();
 
     private boolean mIsTwoPanel = false;
 
-    private static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
-    private static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
 
 
     // The text field where the user enters their search.
@@ -38,7 +38,6 @@ public class MainActivity extends ActionBarActivity
     */
     private static final Long SEARCH_REQUEST_WINDOW = 500L;  // one-half second
     private long mLastSearchTime;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState)  {
@@ -164,9 +163,10 @@ public class MainActivity extends ActionBarActivity
                     .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commit();
         } else  {
-            Intent intent = new Intent(this, TopTracksActivity.class);
+            Intent intent = new Intent(this, TrackListActivity.class);
             intent.setData(trackListUri);
             startActivityForResult(intent, 1);
         }
     }
+
 }

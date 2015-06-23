@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.adapters.ArtistListAdapter;
 import udacity.nano.spotifystreamer.data.StreamerContract;
@@ -138,6 +139,11 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
+        if ((data == null) || (data.getCount() == 0))  {
+            Toast.makeText(getActivity(), R.string.artist_list_empty, Toast.LENGTH_SHORT).show();
+        }
+
         mArtistListAdapter.swapCursor(data);
         if (mPosition != ListView.INVALID_POSITION)  {
             mListView.smoothScrollToPosition(mPosition);

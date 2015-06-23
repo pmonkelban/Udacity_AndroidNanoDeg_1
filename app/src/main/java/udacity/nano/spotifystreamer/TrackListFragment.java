@@ -1,13 +1,8 @@
 package udacity.nano.spotifystreamer;
 
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -17,9 +12,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
-import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 
 public class TrackListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -47,23 +42,12 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
     private static final int TRACK_LOADER_ID = 1;
 
-    StreamerMediaService mStreamerService;
-    boolean isStreamerServiceBound = false;
+    Callback mCallback;
 
-    private ServiceConnection mStreamerServiceConnection = new ServiceConnection()  {
+    public interface Callback  {
+        void onTrackClicked(Uri trackUri);
+    }
 
-        public void onServiceConnected(ComponentName className, IBinder service)  {
-            StreamerMediaService.StreamerMediaServiceBinder binder =
-                    (StreamerMediaService.StreamerMediaServiceBinder) service;
-            mStreamerService = binder.getService();
-            isStreamerServiceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            isStreamerServiceBound = false;
-        }
-    };
 
     /*
      * No arg Constructor.
@@ -80,9 +64,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
-        Intent intent = new Intent(getActivity(), StreamerMediaService.class);
-        isStreamerServiceBound = getActivity().bindService(intent, mStreamerServiceConnection, Context.BIND_AUTO_CREATE);
-
+        mCallback = (Callback) getActivity();
     }
 
 
@@ -115,6 +97,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
         // Create a new Adapter and bind it to the ListView
         mListView = (ListView) rootView.findViewById(R.id.listview_tracks);
+        mListView.setEmptyView(rootView.findViewById(R.id.no_track_data));
         mListView.setAdapter(mTrackAdapter);
 
          /*
@@ -133,9 +116,9 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
                 * ServiceConnection.onServiceConnected() callback hasn't happened yet, in
                 * which case mStreamerService will be null.
                 */
-                if ((cursor != null) && (isStreamerServiceBound)) {
+                if (cursor != null) {
                     String previewURL = cursor.getString(TrackListAdapter.IDX_PREVIEW_URL);
-                    mStreamerService.play(Uri.parse(previewURL));
+                    mCallback.onTrackClicked(Uri.parse(previewURL));
                 }
 
                 mPosition = position;
@@ -161,6 +144,11 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
+        if ((data == null) || (data.getCount() == 0))  {
+            Toast.makeText(getActivity(), R.string.track_list_empty, Toast.LENGTH_SHORT).show();
+        }
+
         mTrackAdapter.swapCursor(data);
         if (mPosition != ListView.INVALID_POSITION)  {
             mListView.smoothScrollToPosition(mPosition);

@@ -1,25 +1,29 @@
-package udacity.nano.spotifystreamer;
+package udacity.nano.spotifystreamer.activities;
 
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import udacity.nano.spotifystreamer.R;
+import udacity.nano.spotifystreamer.TrackListFragment;
 
 /*
  * This activity is called when a user selects an artist.
  * It users the TrackListFragment to display a list of
  * tracks associated with the selected artist.
  */
-public class TopTracksActivity extends ActionBarActivity {
+public class TrackListActivity extends SpotifyStreamerActivity {
+
+    private final String TAG = this.getClass().getCanonicalName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_top_tracks);
+        setContentView(R.layout.track_list_activity);
 
         if (savedInstanceState == null) {
-            // Create the detail fragment and add it to the activity
+            // Create the track list fragment and add it to the activity
             // using a fragment transaction.
 
             Bundle arguments = new Bundle();
@@ -29,9 +33,10 @@ public class TopTracksActivity extends ActionBarActivity {
             fragment.setArguments(arguments);
 
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.top_tracks_container, fragment)
+                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commit();
         }
+
     }
 
     @Override
@@ -45,4 +50,5 @@ public class TopTracksActivity extends ActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
     }
+
 }

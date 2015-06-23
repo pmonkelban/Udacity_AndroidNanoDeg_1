@@ -201,12 +201,10 @@ public class StreamerProvider extends ContentProvider {
 
         final String query = uri.getLastPathSegment().toLowerCase().trim();
 
-        Cursor cursor;
-
         /*
         * Does a record exist in the Query table matching this request?
         */
-        cursor = db.query(
+        Cursor checkForCachedQueryCursor = db.query(
                 StreamerContract.QueryEntry.TABLE_NAME,
                 null,
                 StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
@@ -215,7 +213,7 @@ public class StreamerProvider extends ContentProvider {
                 null,
                 null);
 
-        if (cursor.moveToFirst()) {
+        if (checkForCachedQueryCursor.moveToFirst()) {
 
             Log.d(TAG, "Record exists in Query table for query: " + query);
 
@@ -226,7 +224,7 @@ public class StreamerProvider extends ContentProvider {
 
             try {
                 String queryCreateTimeStr =
-                        cursor.getString(cursor.getColumnIndex(
+                        checkForCachedQueryCursor.getString(checkForCachedQueryCursor.getColumnIndex(
                                 StreamerContract.QueryEntry.COLUMN_CREATE_TIME));
 
                 queryCreateTime = dateFormatter.parse(queryCreateTimeStr);
@@ -243,7 +241,7 @@ public class StreamerProvider extends ContentProvider {
             }
 
             // Finished query of Query table.
-            cursor.close();
+            checkForCachedQueryCursor.close();
 
             if ((queryCreateTime != null) && (queryCreateTime.after(cacheCutOffTime))) {
                 Log.d(TAG, "Cache hit for query: " + query);
@@ -274,7 +272,7 @@ public class StreamerProvider extends ContentProvider {
                     /*
                     * Delete ArtistQuery Entry.
                     */
-                    int queryId = cursor.getInt(COLUMN_QUERY_ID_IDX);
+                    int queryId = checkForCachedQueryCursor.getInt(COLUMN_QUERY_ID_IDX);
 
                     db.delete(
                             StreamerContract.ArtistQuery.TABLE_NAME,
@@ -298,7 +296,15 @@ public class StreamerProvider extends ContentProvider {
                     */
                     Log.e(TAG, "Failed to fetch data for query: " + query + " Using stale data");
                     Log.e(TAG, "Error: " + e.getMessage());
-                    return cursor;
+
+                    return sArtistsByQuery.query(
+                            db,
+                            null,
+                            StreamerContract.QueryEntry.COLUMN_QUERY + " = ?",
+                            new String[]{query},
+                            null,
+                            null,
+                            null);
 
                 }
             }
@@ -307,7 +313,7 @@ public class StreamerProvider extends ContentProvider {
 
             Log.d(TAG, "Record does not exist in Query table for query: " + query);
 
-            cursor.close();
+            checkForCachedQueryCursor.close();
 
             try {
                 ArtistsPager artistPager = mSpotifyService.searchArtists(query);
@@ -470,11 +476,15 @@ public class StreamerProvider extends ContentProvider {
         }
     }
 
+    /*
+    * Gets tracks for the given artist where the artist's spotify ID is the last
+    * segment of the given Uri.
+    */
     private Cursor getTracks(Uri uri, SQLiteDatabase db, Date cacheCutOffTime) {
 
         final String spotifyId = uri.getLastPathSegment();
 
-        Cursor cursor = db.query(
+        Cursor artistLookupCursor = db.query(
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 new String[]{StreamerContract.ArtistEntry._ID},
                 StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID + " =?",
@@ -483,19 +493,24 @@ public class StreamerProvider extends ContentProvider {
                 null,
                 null);
 
-        if (!cursor.moveToFirst()) {
+        if (!artistLookupCursor.moveToFirst()) {
             Log.e(TAG, "Error: Unable to find Artist record for artist: " + spotifyId);
             return null;
         }
 
-        int artistId = cursor.getInt(cursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
+        int artistId = artistLookupCursor.getInt(
+                artistLookupCursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
 
-        cursor.close();
+        artistLookupCursor.close();
 
         return getTracks(artistId, spotifyId, db, cacheCutOffTime);
 
     }
 
+    /*
+    * Gets tracks for the given artistID where artistId is a key into the Artist table
+    * in the given database.
+    */
     private Cursor getTracks(long artistId, String artistSpotifyId, SQLiteDatabase db,
                              Date cacheCutOffTime) {
 
@@ -504,7 +519,7 @@ public class StreamerProvider extends ContentProvider {
         /*
         * Get the Artists last tracks updated time.
         */
-        Cursor cursor = db.query(
+        Cursor artistLastUpdateTimeCursor = db.query(
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 new String[]{StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED},
                 StreamerContract.ArtistEntry._ID + " = ?",
@@ -515,9 +530,10 @@ public class StreamerProvider extends ContentProvider {
 
         Date tracksLastUpdated = null;
 
-        if (cursor.moveToFirst()) {
+        if (artistLastUpdateTimeCursor.moveToFirst()) {
 
-            String tracksLastUpdatedStr = cursor.getString(cursor.getColumnIndex(
+            String tracksLastUpdatedStr = artistLastUpdateTimeCursor.getString(
+                    artistLastUpdateTimeCursor.getColumnIndex(
                     StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED));
 
             try {
@@ -529,7 +545,7 @@ public class StreamerProvider extends ContentProvider {
             }
         }
 
-        cursor.close();
+        artistLastUpdateTimeCursor.close();
 
         List<Track> topTracks = null;
         

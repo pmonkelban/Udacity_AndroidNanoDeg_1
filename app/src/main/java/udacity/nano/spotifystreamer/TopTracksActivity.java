@@ -7,7 +7,7 @@ import android.view.MenuItem;
 
 /*
  * This activity is called when a user selects an artist.
- * It users the TopTracksFragment to display a list of
+ * It users the TrackListFragment to display a list of
  * tracks associated with the selected artist.
  */
 public class TopTracksActivity extends ActionBarActivity {
@@ -23,9 +23,9 @@ public class TopTracksActivity extends ActionBarActivity {
             // using a fragment transaction.
 
             Bundle arguments = new Bundle();
-            arguments.putParcelable(TopTracksFragment.BUNDLE_KEY_ARTIST_ID, getIntent().getData());
+            arguments.putParcelable(TrackListFragment.BUNDLE_KEY_ARTIST_ID, getIntent().getData());
 
-            TopTracksFragment fragment = new TopTracksFragment();
+            TrackListFragment fragment = new TrackListFragment();
             fragment.setArguments(arguments);
 
             getSupportFragmentManager().beginTransaction()

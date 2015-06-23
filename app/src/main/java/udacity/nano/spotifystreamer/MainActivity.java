@@ -22,8 +22,8 @@ public class MainActivity extends ActionBarActivity
 
     private boolean mIsTwoPanel = false;
 
-    private static final String TOP_TRACKS_FRAG_TAG = "TOP_TRACKS_FRAG";
-    private static final String ARTIST_LIST_FRAG_TAG = "ARTIST_LIST_FRAG";
+    private static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
+    private static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
 
 
     // The text field where the user enters their search.
@@ -53,7 +53,7 @@ public class MainActivity extends ActionBarActivity
             if (savedInstanceState == null)  {
                 getSupportFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.artist_list_container, new TopTracksFragment(), TOP_TRACKS_FRAG_TAG)
+                        .replace(R.id.track_list_container, new TrackListFragment(), TRACK_LIST_FRAGMENT)
                         .commit();
             }
 
@@ -76,7 +76,7 @@ public class MainActivity extends ActionBarActivity
 
                 getSupportFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAG_TAG)
+                        .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
                         .commit();
             }
         }
@@ -118,7 +118,7 @@ public class MainActivity extends ActionBarActivity
 
                     getSupportFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAG_TAG)
+                            .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
                             .commit();
 
                     return true;
@@ -154,19 +154,19 @@ public class MainActivity extends ActionBarActivity
 
         if (mIsTwoPanel) {
             Bundle bundle = new Bundle();
-            bundle.putParcelable(TopTracksFragment.BUNDLE_KEY_ARTIST_ID, trackListUri);
+            bundle.putParcelable(TrackListFragment.BUNDLE_KEY_ARTIST_ID, trackListUri);
 
-            TopTracksFragment fragment = new TopTracksFragment();
+            TrackListFragment fragment = new TrackListFragment();
             fragment.setArguments(bundle);
 
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.track_list_container, fragment, TOP_TRACKS_FRAG_TAG)
+                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commit();
         } else  {
             Intent intent = new Intent(this, TopTracksActivity.class);
             intent.setData(trackListUri);
-            startActivity(intent);
+            startActivityForResult(intent, 1);
         }
     }
 }

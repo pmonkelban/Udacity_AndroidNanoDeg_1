@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import udacity.nano.spotifystreamer.adapters.ArtistListAdapter;
 import udacity.nano.spotifystreamer.data.StreamerContract;
 
 
@@ -25,10 +26,10 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
     private static final String BUNDLE_KEY_LAST_POSITION = "key_last_position";
 
     /*
-    * mArtistAdapter is bound to a UI ListView element to provide the
+    * mArtistListAdapter is bound to a UI ListView element to provide the
     * results of the artist search.
     */
-    private ArtistAdapter mArtistAdapter;
+    private ArtistListAdapter mArtistListAdapter;
 
     private ListView mListView;
     private int mPosition = ListView.INVALID_POSITION;
@@ -78,17 +79,17 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
         }
         /*
-        * The ArtistAdapter will take data from a source and
+        * The ArtistListAdapter will take data from a source and
         * use it to populate the ListView that it's attached to.
         */
-        mArtistAdapter = new ArtistAdapter(getActivity(), null, 0, iconWidth, iconHeight);
+        mArtistListAdapter = new ArtistListAdapter(getActivity(), null, 0, iconWidth, iconHeight);
 
         // Inflate the view which contains ListView which displays the results.
         View rootView = inflater.inflate(R.layout.artist_list, container, false);
 
         // Create a new Adapter and bind it to the ListView
         mListView = (ListView) rootView.findViewById(R.id.artist_search_listView);
-        mListView.setAdapter(mArtistAdapter);
+        mListView.setAdapter(mArtistListAdapter);
 
         /*
          * Detect when a list view item (an artist) is clicked, and launch
@@ -102,7 +103,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
                 if (cursor != null) {
-                    String artistSpotifyId = cursor.getString(ArtistAdapter.IDX_SPOTIFY_ID);
+                    String artistSpotifyId = cursor.getString(ArtistListAdapter.IDX_SPOTIFY_ID);
 
                     Uri trackListUri = StreamerContract
                             .GET_TRACKS_CONTENT_URI
@@ -137,7 +138,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        mArtistAdapter.swapCursor(data);
+        mArtistListAdapter.swapCursor(data);
         if (mPosition != ListView.INVALID_POSITION)  {
             mListView.smoothScrollToPosition(mPosition);
         }
@@ -158,7 +159,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader)  {
-        mArtistAdapter.swapCursor(null);
+        mArtistListAdapter.swapCursor(null);
     }
 
 }

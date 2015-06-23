@@ -1,5 +1,5 @@
 <fragment xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:id="@+id/top_tracks_container"
-    android:name="udacity.nano.spotifystreamer.TopTracksFragment"
+    android:name="udacity.nano.spotifystreamer.TrackListFragment"
     tools:layout="@layout/artist_list" android:layout_width="match_parent"
     android:layout_height="match_parent" />

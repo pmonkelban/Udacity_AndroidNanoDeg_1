@@ -18,10 +18,11 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
 import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 
-public class TopTracksFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class TrackListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     // An identifier used for logging
     private final String TAG = getClass().getCanonicalName();
@@ -33,7 +34,7 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
 
     // Bound to a UI ListView element to provide the results of
     // the top tracks query.
-    private TopTracksAdapter mTrackAdapter;
+    private TrackListAdapter mTrackAdapter;
 
     private ListView mListView;
     private int mPosition = ListView.INVALID_POSITION;
@@ -67,7 +68,7 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
     /*
      * No arg Constructor.
      */
-    public TopTracksFragment() {
+    public TrackListFragment() {
 
     }
 
@@ -104,10 +105,10 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
         }
 
         /*
-        * The TopTracksAdapter will take data from a source and
+        * The TrackListAdapter will take data from a source and
         * use it to populate the ListView that it's attached to.
         */
-        mTrackAdapter = new TopTracksAdapter(getActivity(), null, 0, iconWidth, iconHeight);
+        mTrackAdapter = new TrackListAdapter(getActivity(), null, 0, iconWidth, iconHeight);
 
         // Inflate the view which contains the ListView which displays the results.
         View rootView = inflater.inflate(R.layout.track_list, container, false);
@@ -133,7 +134,7 @@ public class TopTracksFragment extends Fragment implements LoaderManager.LoaderC
                 * which case mStreamerService will be null.
                 */
                 if ((cursor != null) && (isStreamerServiceBound)) {
-                    String previewURL = cursor.getString(TopTracksAdapter.IDX_PREVIEW_URL);
+                    String previewURL = cursor.getString(TrackListAdapter.IDX_PREVIEW_URL);
                     mStreamerService.play(Uri.parse(previewURL));
                 }
 

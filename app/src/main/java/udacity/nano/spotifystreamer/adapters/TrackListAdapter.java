@@ -1,4 +1,4 @@
-package udacity.nano.spotifystreamer;
+package udacity.nano.spotifystreamer.adapters;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -11,7 +11,9 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
-public class TopTracksAdapter extends CursorAdapter {
+import udacity.nano.spotifystreamer.R;
+
+public class TrackListAdapter extends CursorAdapter {
 
     private final int iconWidth;
     private final int iconHeight;
@@ -52,7 +54,7 @@ public class TopTracksAdapter extends CursorAdapter {
         }
     }
 
-    public TopTracksAdapter(Context context, Cursor c, int flags,
+    public TrackListAdapter(Context context, Cursor c, int flags,
                             int iconWidth, int iconHeight) {
 
         super(context, c, flags);

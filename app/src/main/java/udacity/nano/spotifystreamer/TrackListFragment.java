@@ -122,6 +122,9 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
                 }
 
                 mPosition = position;
+
+                view.setActivated(true);
+
             }
         });
 

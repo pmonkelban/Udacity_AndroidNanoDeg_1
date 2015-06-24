@@ -115,6 +115,8 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
                     ((Callback) getActivity()).onArtistSelected(trackListUri);
                 }
                 mPosition = position;
+
+                view.setActivated(true);
             }
         });
 

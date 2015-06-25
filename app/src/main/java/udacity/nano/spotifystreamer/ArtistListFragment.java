@@ -1,12 +1,12 @@
 package udacity.nano.spotifystreamer;
 
+import android.app.Fragment;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,6 +44,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
     private static final int ARTIST_LOADER_ID = 0;
 
+    Callback mCallback;
 
     public interface Callback  {
         void onArtistSelected(Uri trackListUri);
@@ -57,10 +58,16 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Bundle bundle = this.getArguments();
-
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
+
+        try  {
+            mCallback = (Callback) getActivity();
+
+        } catch (ClassCastException e)  {
+            throw new ClassCastException(getActivity().toString() + " must implement" +
+                    "ArtistListFragment.Callback");
+        }
     }
 
     @Override
@@ -112,7 +119,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
                             .appendEncodedPath(artistSpotifyId)
                             .build();
 
-                    ((Callback) getActivity()).onArtistSelected(trackListUri);
+                    mCallback.onArtistSelected(trackListUri);
                 }
                 mPosition = position;
 

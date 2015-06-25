@@ -3,6 +3,7 @@ package udacity.nano.spotifystreamer.activities;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
@@ -17,10 +18,13 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
  * The app's main activity.
  * Kicks off ArtistListFragment
  */
-public class MainActivity extends SpotifyStreamerActivity
-        implements ArtistListFragment.Callback {
+public class MainActivity extends ActionBarActivity implements ArtistListFragment.Callback {
 
     private final String TAG = getClass().getCanonicalName();
+
+    static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
+    static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
+
 
     private boolean mIsTwoPanel = false;
 
@@ -50,7 +54,7 @@ public class MainActivity extends SpotifyStreamerActivity
             Log.d(TAG, "Using Two Panel Mode");
 
             if (savedInstanceState == null)  {
-                getSupportFragmentManager()
+                getFragmentManager()
                         .beginTransaction()
                         .replace(R.id.track_list_container, new TrackListFragment(), TRACK_LIST_FRAGMENT)
                         .commit();
@@ -73,7 +77,7 @@ public class MainActivity extends SpotifyStreamerActivity
                 ArtistListFragment fragment = new ArtistListFragment();
                 fragment.setArguments(bundle);
 
-                getSupportFragmentManager()
+                getFragmentManager()
                         .beginTransaction()
                         .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
                         .commit();
@@ -115,7 +119,7 @@ public class MainActivity extends SpotifyStreamerActivity
                     ArtistListFragment fragment = new ArtistListFragment();
                     fragment.setArguments(bundle);
 
-                    getSupportFragmentManager()
+                    getFragmentManager()
                             .beginTransaction()
                             .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
                             .commit();
@@ -158,7 +162,7 @@ public class MainActivity extends SpotifyStreamerActivity
             TrackListFragment fragment = new TrackListFragment();
             fragment.setArguments(bundle);
 
-            getSupportFragmentManager()
+            getFragmentManager()
                     .beginTransaction()
                     .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commit();

@@ -6,8 +6,8 @@
     <dimen name="icon_height">64dp</dimen>
     <dimen name="icon_width">64dp</dimen>
 
-    <dimen name="track_image_display_height">256dp</dimen>
-    <dimen name="track_image_display_width">256dp</dimen>
+    <dimen name="track_image_display_height">512dp</dimen>
+    <dimen name="track_image_display_width">512dp</dimen>
 
     <!--
     These are the dimensions of the image that we'll download.  If the device is rotated
@@ -15,7 +15,7 @@
     It's better to download the larger image and then shrink it down to the smaller if we
     rotate to landscape.  Scaling the smaller image up gives poor image quality.
     -->
-    <dimen name="track_image_download_height">256dp</dimen>
-    <dimen name="track_image_download_width">256dp</dimen>
+    <dimen name="track_image_download_height">512dp</dimen>
+    <dimen name="track_image_download_width">512dp</dimen>
 
 </resources>

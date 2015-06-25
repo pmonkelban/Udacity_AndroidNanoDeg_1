@@ -1,6 +1,7 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -12,9 +13,11 @@ import udacity.nano.spotifystreamer.TrackListFragment;
  * It users the TrackListFragment to display a list of
  * tracks associated with the selected artist.
  */
-public class TrackListActivity extends SpotifyStreamerActivity {
+public class TrackListActivity extends ActionBarActivity {
 
     private final String TAG = this.getClass().getCanonicalName();
+
+    static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +35,7 @@ public class TrackListActivity extends SpotifyStreamerActivity {
             TrackListFragment fragment = new TrackListFragment();
             fragment.setArguments(arguments);
 
-            getSupportFragmentManager().beginTransaction()
+            getFragmentManager().beginTransaction()
                     .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commit();
         }

@@ -31,6 +31,10 @@
                 android:value=".activities.MainActivity" />
         </activity>
 
+        <activity android:name=".activities.NowPlayingActivity"
+            android:label="@string/now_playing"
+            android:theme="@android:style/Theme.Dialog" />
+
         <provider
             android:authorities="udacity.nano.spotifystreamer"
             android:name=".data.StreamerProvider" />

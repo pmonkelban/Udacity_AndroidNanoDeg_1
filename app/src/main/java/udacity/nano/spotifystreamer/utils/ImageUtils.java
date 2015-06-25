@@ -32,28 +32,4 @@ public class ImageUtils {
 
     }
 
-    /*
-    * Returns the largest image in the list.  Useful for displaying when the track is playing.
-    * We'll assume that the images are roughly squares.  So this just returns the image
-    * with the largest width.
-    */
-    public static Image getLargestImage(List<Image> images)  {
-
-        if ((images == null) || (images.size() < 1)) return null;
-
-        Image bestFit = null;
-        int max_width = 0;
-
-        for (Image i : images)  {
-
-            if (i.width > max_width)  {
-                max_width = i.width;
-                bestFit = i;
-            }
-        }
-
-        return bestFit;
-
-    }
-
 }

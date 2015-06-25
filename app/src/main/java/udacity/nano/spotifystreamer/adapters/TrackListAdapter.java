@@ -12,32 +12,12 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import udacity.nano.spotifystreamer.R;
+import udacity.nano.spotifystreamer.data.StreamerProvider;
 
 public class TrackListAdapter extends CursorAdapter {
 
     private final int iconWidth;
     private final int iconHeight;
-
-    /*
-    * These are tied to the the query sTracksByArtist in StreamerProvider.
-    * If the attributes returned by that query changes, these values must be updated.
-    */
-    public static final int IDX_ARTIST_SPOTIFY_ID = 1;
-    public static final int IDX_ARTIST_NAME = 2;
-    public static final int IDX_ARTIST_ICON = 3;
-    public static final int IDX_LAST_UPDATED = 4;
-    public static final int IDX_ID = 5;
-    public static final int IDX_ARTIST_ID = 6;
-    public static final int IDX_TRACK_SPOTIFY_ID = 7;
-    public static final int IDX_TRACK_NAME = 8;
-    public static final int IDX_ALBUM_NAME = 9;
-    public static final int IDX_DURATION = 10;
-    public static final int IDX_EXPLICIT = 11;
-    public static final int IDX_PLAYABLE = 12;
-    public static final int IDX_POPULARITY = 13;
-    public static final int IDX_PREVIEW_URL = 14;
-    public static final int IDX_TRACK_ICON = 15;
-    public static final int IDX_TRACK_IMAGE = 16;
 
     /*
     * Cache the views for an Track list item.
@@ -79,11 +59,11 @@ public class TrackListAdapter extends CursorAdapter {
 
         ViewHolder viewHolder = (ViewHolder) view.getTag();
 
-        viewHolder.trackName.setText(cursor.getString(IDX_TRACK_NAME));
-        viewHolder.albumName.setText(cursor.getString(IDX_ALBUM_NAME));
+        viewHolder.trackName.setText(cursor.getString(StreamerProvider.IDX_TRACK_NAME));
+        viewHolder.albumName.setText(cursor.getString(StreamerProvider.IDX_ALBUM_NAME));
 
         Picasso.with(context)
-                .load(cursor.getString(IDX_TRACK_ICON))
+                .load(cursor.getString(StreamerProvider.IDX_TRACK_ICON))
                 .resize(iconWidth, iconHeight)
                 .into(viewHolder.icon);
 

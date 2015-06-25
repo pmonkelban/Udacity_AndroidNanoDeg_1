@@ -34,8 +34,6 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
     @Override
     public void onCreate()  {
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-
-        showNotification();
     }
 
     @Override
@@ -55,6 +53,7 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        //TODO: Send a broadcast notice that the song has finished.  NowPlayingActivity will receive this and play the next track.
         mp.release();
     }
 
@@ -84,6 +83,22 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
 
     }
 
+    public void pause()  {
+
+        if ((mMediaPlayer != null) && (mMediaPlayer.isPlaying()))  {
+            mMediaPlayer.pause();
+        }
+
+    }
+
+    public void resume()  {
+
+        if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying()))  {
+            mMediaPlayer.start();
+        }
+
+    }
+
     public void stop()  {
 
         if (mMediaPlayer != null)  {
@@ -98,15 +113,18 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
         }
     }
 
-    private void showNotification()  {
-//        CharSequence c = getText(R.string.spotify_streamer_running);
-//
-//        Notification notification = new Notification(R.drawable.ic_logo, c, System.currentTimeMillis());
-//        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, LocalServiceActivities.Controller.class), 0);
-//        notification.setLatestEventInfo(this, getText(R.string.app_name), c, pendingIntent);
-//        mNotificationManager.notify(NOTIFICATION, notification);
+    public void seekTo(int miliSeconds)  {
 
+        if (mMediaPlayer != null)  {
+            mMediaPlayer.seekTo(miliSeconds);
+        }
 
+    }
+
+    public boolean isPlaying()  {
+
+        if (mMediaPlayer == null) return false;
+        return mMediaPlayer.isPlaying();
     }
 
 }

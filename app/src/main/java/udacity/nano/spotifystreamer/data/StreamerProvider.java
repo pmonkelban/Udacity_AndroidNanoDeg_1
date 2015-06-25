@@ -31,6 +31,26 @@ import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
 
+    /*
+    * These are tied to the the query sTracksByArtist in StreamerProvider.
+    * If the attributes returned by that query changes, these values must be updated.
+    */
+    public static final int IDX_ARTIST_SPOTIFY_ID = 1;
+    public static final int IDX_ARTIST_NAME = 2;
+    public static final int IDX_ARTIST_ICON = 3;
+    public static final int IDX_LAST_UPDATED = 4;
+    public static final int IDX_ID = 5;
+    public static final int IDX_ARTIST_ID = 6;
+    public static final int IDX_TRACK_SPOTIFY_ID = 7;
+    public static final int IDX_TRACK_NAME = 8;
+    public static final int IDX_ALBUM_NAME = 9;
+    public static final int IDX_DURATION = 10;
+    public static final int IDX_EXPLICIT = 11;
+    public static final int IDX_PLAYABLE = 12;
+    public static final int IDX_POPULARITY = 13;
+    public static final int IDX_PREVIEW_URL = 14;
+    public static final int IDX_TRACK_ICON = 15;
+    public static final int IDX_TRACK_IMAGE = 16;
     private static final String TAG = StreamerProvider.class.getCanonicalName();
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -49,9 +69,11 @@ public class StreamerProvider extends ContentProvider {
 
     private SpotifyService mSpotifyService;
 
-    // Desired height and width for icons.
+    // Desired height and width for icons and images.
     private int idealIconWidth;
     private int idealIconHeight;
+    private int idealImageWidth;
+    private int idealImageHeight;
 
     private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours ( * 0 -> fetch everything)
 //    private static final long MAX_CACHE_TIME = 1000 * 60; // 1 minute (for testing)
@@ -149,6 +171,9 @@ public class StreamerProvider extends ContentProvider {
 
         idealIconWidth = (int) getContext().getResources().getDimension(R.dimen.icon_width);
         idealIconHeight = (int) getContext().getResources().getDimension(R.dimen.icon_height);
+
+        idealImageWidth = (int) getContext().getResources().getDimension(R.dimen.track_image_download_width);
+        idealImageHeight = (int) getContext().getResources().getDimension(R.dimen.track_image_download_height);
 
         return true;
     }
@@ -660,7 +685,7 @@ public class StreamerProvider extends ContentProvider {
 
             values.put(StreamerContract.TrackEntry.COLUMN_ICON, (i == null) ? null : i.url);
 
-            i = ImageUtils.getLargestImage(track.album.images);
+            i = ImageUtils.getClosestImageSize(track.album.images, idealImageWidth, idealImageHeight);
 
             values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
 

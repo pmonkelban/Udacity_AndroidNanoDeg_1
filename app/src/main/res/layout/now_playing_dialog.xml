@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/track_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="@dimen/track_image_display_width"
+        android:maxHeight="@dimen/track_image_display_width"
+        android:minWidth="@dimen/track_image_display_width"
+        android:minHeight="@dimen/track_image_display_width"
+        android:scaleType="fitXY"
+        android:adjustViewBounds="true"
+        android:layout_gravity="center_horizontal"/>
+
+    <!--
+        android:maxHeight="@dimen/track_image_height"
+        android:maxWidth="@dimen/track_image_width"
+        android:minHeight="@dimen/track_image_height"
+        android:minWidth="@dimen/track_image_width"
+    -->
+
+    <TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TableRow>
+
+            <TextView
+                android:layout_column="1"
+                android:padding="3dp"
+                android:text="Artist: " />
+
+            <TextView
+                android:id="@+id/artist"
+                android:layout_column="2"
+                android:gravity="left"
+                android:padding="3dp" />
+        </TableRow>
+
+        <TableRow>
+
+            <TextView
+                android:layout_column="1"
+                android:padding="3dp"
+                android:text="Track Name: " />
+
+            <TextView
+                android:id="@+id/track_name"
+                android:layout_column="2"
+                android:gravity="left"
+                android:padding="3dp" />
+        </TableRow>
+
+        <TableRow>
+
+            <TextView
+                android:layout_column="1"
+                android:padding="3dp"
+                android:text="Album: " />
+
+            <TextView
+                android:id="@+id/album_name"
+                android:layout_column="2"
+                android:gravity="left"
+                android:padding="3dp" />
+        </TableRow>
+
+    </TableLayout>
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_prev"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="Prev" />
+
+        <Button
+            android:id="@+id/button_play"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="Play"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/button_pause"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="Pause" />
+
+        <Button
+            android:id="@+id/button_next"
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="Next" />
+
+    </LinearLayout>
+
+</LinearLayout>

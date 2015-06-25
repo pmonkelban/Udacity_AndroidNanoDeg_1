@@ -6,8 +6,13 @@
     <dimen name="icon_height">64dp</dimen>
     <dimen name="icon_width">64dp</dimen>
 
-    <dimen name="track_image_display_height">256dp</dimen>
-    <dimen name="track_image_display_width">256dp</dimen>
+    <!--
+    The image displayed when a track is playing needs to be smaller when
+    viewed on a smaller screen in landscape mode.  Otherwise, the control buttons
+    will be pushed off the bottom of the screen.
+    -->
+    <dimen name="track_image_display_height">128dp</dimen>
+    <dimen name="track_image_display_width">128dp</dimen>
 
     <!--
     These are the dimensions of the image that we'll download.  If the device is rotated

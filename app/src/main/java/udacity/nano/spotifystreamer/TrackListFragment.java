@@ -1,12 +1,13 @@
 package udacity.nano.spotifystreamer;
 
+import android.app.Fragment;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +15,9 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import udacity.nano.spotifystreamer.activities.NowPlayingActivity;
 import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
+import udacity.nano.spotifystreamer.data.StreamerProvider;
 
 
 public class TrackListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -31,7 +34,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     // the top tracks query.
     private TrackListAdapter mTrackAdapter;
 
-    private ListView mListView;
+    private ListView mTrackListView;
     private int mPosition = ListView.INVALID_POSITION;
 
     private Uri mTrackListUri;
@@ -41,13 +44,6 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     private int iconHeight;
 
     private static final int TRACK_LOADER_ID = 1;
-
-    Callback mCallback;
-
-    public interface Callback  {
-        void onTrackClicked(Uri trackUri);
-    }
-
 
     /*
      * No arg Constructor.
@@ -64,7 +60,6 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
-        mCallback = (Callback) getActivity();
     }
 
 
@@ -81,7 +76,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
                              Bundle savedInstanceState) {
 
         Bundle arguments = getArguments();
-        if (arguments != null)  {
+        if (arguments != null) {
             mTrackListUri = arguments.getParcelable(BUNDLE_KEY_ARTIST_ID);
 
         }
@@ -96,30 +91,32 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         View rootView = inflater.inflate(R.layout.track_list, container, false);
 
         // Create a new Adapter and bind it to the ListView
-        mListView = (ListView) rootView.findViewById(R.id.listview_tracks);
-        mListView.setEmptyView(rootView.findViewById(R.id.no_track_data));
-        mListView.setAdapter(mTrackAdapter);
+        mTrackListView = (ListView) rootView.findViewById(R.id.listview_tracks);
+        mTrackListView.setEmptyView(rootView.findViewById(R.id.no_track_data));
+        mTrackListView.setAdapter(mTrackAdapter);
 
          /*
          * Detect when a list view item (an artist) is clicked, and launch
          * and intent passing the artist's id as an extra.
          */
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mTrackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
 
+                Intent intent = new Intent(getActivity(), NowPlayingActivity.class);
+
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
-                /*
-                * Must make sure that isStreamerServiceBound is true.  It's possible that
-                * ServiceConnection.onServiceConnected() callback hasn't happened yet, in
-                * which case mStreamerService will be null.
-                */
-                if (cursor != null) {
-                    String previewURL = cursor.getString(TrackListAdapter.IDX_PREVIEW_URL);
-                    mCallback.onTrackClicked(Uri.parse(previewURL));
-                }
+                String trackSpotifyId  = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
+                String artistSpotifyId = cursor.getString(StreamerProvider.IDX_ARTIST_SPOTIFY_ID);
+
+
+                intent.putExtra(NowPlayingActivity.EXTRA_KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
+                intent.putExtra(NowPlayingActivity.EXTRA_KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);
+
+                startActivity(intent);
+
 
                 mPosition = position;
 
@@ -129,8 +126,8 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         });
 
         // Read last search and last position from the saved state
-        if (savedInstanceState != null)  {
-            if (savedInstanceState.containsKey(BUNDLE_KEY_LAST_POSITION))  {
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(BUNDLE_KEY_LAST_POSITION)) {
                 mPosition = savedInstanceState.getInt(BUNDLE_KEY_LAST_POSITION);
             }
         }
@@ -140,7 +137,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState)  {
+    public void onActivityCreated(Bundle savedInstanceState) {
         getLoaderManager().initLoader(TRACK_LOADER_ID, null, this);
         super.onActivityCreated(savedInstanceState);
     }
@@ -148,20 +145,20 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        if ((data == null) || (data.getCount() == 0))  {
+        if ((data == null) || (data.getCount() == 0)) {
             Toast.makeText(getActivity(), R.string.track_list_empty, Toast.LENGTH_SHORT).show();
         }
 
         mTrackAdapter.swapCursor(data);
-        if (mPosition != ListView.INVALID_POSITION)  {
-            mListView.smoothScrollToPosition(mPosition);
+        if (mPosition != ListView.INVALID_POSITION) {
+            mTrackListView.smoothScrollToPosition(mPosition);
         }
     }
 
     @Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle)  {
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
 
-        if (mTrackListUri == null)  return null;
+        if (mTrackListUri == null) return null;
 
         return new CursorLoader(getActivity(),
                 mTrackListUri,
@@ -172,7 +169,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     @Override
-    public void onLoaderReset(Loader<Cursor> loader)  {
+    public void onLoaderReset(Loader<Cursor> loader) {
         mTrackAdapter.swapCursor(null);
     }
 

@@ -8,13 +8,13 @@
         android:id="@+id/track_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:maxWidth="@dimen/track_image_display_width"
-        android:maxHeight="@dimen/track_image_display_width"
-        android:minWidth="@dimen/track_image_display_width"
-        android:minHeight="@dimen/track_image_display_width"
-        android:scaleType="fitXY"
+        android:layout_gravity="center_horizontal"
         android:adjustViewBounds="true"
-        android:layout_gravity="center_horizontal"/>
+        android:maxHeight="@dimen/track_image_display_width"
+        android:maxWidth="@dimen/track_image_display_width"
+        android:minHeight="@dimen/track_image_display_width"
+        android:minWidth="@dimen/track_image_display_width"
+        android:scaleType="fitXY" />
 
     <!--
         android:maxHeight="@dimen/track_image_height"
@@ -32,13 +32,16 @@
             <TextView
                 android:layout_column="1"
                 android:padding="3dp"
-                android:text="Artist: " />
+                android:gravity="start"
+                android:text="@string/artist_name" />
 
             <TextView
                 android:id="@+id/artist"
                 android:layout_column="2"
-                android:gravity="left"
-                android:padding="3dp" />
+                android:ellipsize="end"
+                android:gravity="start"
+                android:padding="3dp"
+                android:singleLine="true" />
         </TableRow>
 
         <TableRow>
@@ -46,13 +49,17 @@
             <TextView
                 android:layout_column="1"
                 android:padding="3dp"
-                android:text="Track Name: " />
+                android:gravity="start"
+                android:text="@string/track_name" />
 
             <TextView
                 android:id="@+id/track_name"
                 android:layout_column="2"
-                android:gravity="left"
-                android:padding="3dp" />
+                android:ellipsize="end"
+                android:gravity="start"
+                android:padding="3dp"
+                android:singleLine="true" />
+
         </TableRow>
 
         <TableRow>
@@ -60,13 +67,16 @@
             <TextView
                 android:layout_column="1"
                 android:padding="3dp"
-                android:text="Album: " />
+                android:gravity="start"
+                android:text="@string/album_name" />
 
             <TextView
                 android:id="@+id/album_name"
                 android:layout_column="2"
-                android:gravity="left"
-                android:padding="3dp" />
+                android:ellipsize="end"
+                android:gravity="start"
+                android:padding="3dp"
+                android:singleLine="true" />
         </TableRow>
 
     </TableLayout>
@@ -85,27 +95,27 @@
 
         <ImageButton
             android:id="@+id/button_prev"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_previous" />
 
         <ImageButton
             android:id="@+id/button_play"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_play"
             android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/button_pause"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_pause" />
 
         <ImageButton
             android:id="@+id/button_next"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@android:drawable/ic_media_next" />
 
     </LinearLayout>

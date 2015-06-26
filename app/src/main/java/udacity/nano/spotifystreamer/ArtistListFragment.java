@@ -149,7 +149,10 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        if ((data == null) || (data.getCount() == 0))  {
+        if (data == null)  {
+            Toast.makeText(getActivity(), R.string.artist_list_error, Toast.LENGTH_SHORT).show();
+
+        } else if (data.getCount() == 0)  {
             Toast.makeText(getActivity(), R.string.artist_list_empty, Toast.LENGTH_SHORT).show();
         }
 

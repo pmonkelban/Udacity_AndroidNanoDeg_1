@@ -204,7 +204,8 @@ public class StreamerProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
-        retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+        if (retCursor != null)  retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+
         return retCursor;
     }
 
@@ -420,7 +421,6 @@ public class StreamerProvider extends ContentProvider {
         /*
         * Return List of Artists.
         */
-
         return sArtistsByQuery.query(
                 db,
                 null,
@@ -491,7 +491,6 @@ public class StreamerProvider extends ContentProvider {
                             StreamerContract.ArtistQuery.TABLE_NAME + ")",
                     null
             );
-
 
             db.setTransactionSuccessful();
 
@@ -626,9 +625,9 @@ public class StreamerProvider extends ContentProvider {
 
                 } catch (Exception e) {
 
-                /*
-                * Error, use Stale Data
-                */
+                    /*
+                    * Error, use Stale Data
+                    */
                     Log.e(TAG, "Failed to fetch to tracks for artist: " + artistSpotifyId + ", using Stale Data.");
                     Log.e(TAG, "Error: " + e.getMessage());
 
@@ -771,7 +770,7 @@ public class StreamerProvider extends ContentProvider {
             db.setTransactionSuccessful();
 
         } catch (Exception e) {
-            Log.d(TAG, "Error querying for artists with expired caches: " + e.getMessage());
+            Log.e(TAG, "Error querying for artists with expired caches: " + e.getMessage());
 
         } finally {
             db.endTransaction();

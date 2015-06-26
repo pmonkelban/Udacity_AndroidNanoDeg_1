@@ -14,7 +14,7 @@ import android.util.Log;
 
 import udacity.nano.spotifystreamer.R;
 
-public class StreamerMediaService extends Service  {
+public class StreamerMediaService extends Service {
 
     private final String TAG = this.getClass().getCanonicalName();
 
@@ -31,111 +31,148 @@ public class StreamerMediaService extends Service  {
     private final IBinder mBinder = new StreamerMediaServiceBinder();
 
     public class StreamerMediaServiceBinder extends Binder {
-        public StreamerMediaService getService()  {
+        public StreamerMediaService getService() {
             return StreamerMediaService.this;
         }
     }
 
     @Override
-    public void onCreate()  {
+    public void onCreate() {
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId)  {
+    public int onStartCommand(Intent intent, int flags, int startId) {
         return START_STICKY;
     }
 
     @Override
-    public void onDestroy()  {
+    public void onDestroy() {
         mNotificationManager.cancel(NOTIFICATION);
     }
 
     @Override
-    public IBinder onBind(Intent i)  {
+    public IBinder onBind(Intent i) {
         return mBinder;
     }
 
-    public void reset(Uri trackUri)  {
+    public boolean reset(Uri trackUri) {
 
-        stop();
+        try {
+            stop();
 
-        mMediaPlayer = MediaPlayer.create(this, trackUri);
-        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+            mMediaPlayer = MediaPlayer.create(this, trackUri);
+            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
-        mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                Log.d(TAG, "onPrepared() called");
+            mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    Log.d(TAG, "onPrepared() called");
+                    mMediaPlayer.start();
+                }
+            });
+
+            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.d(TAG, "onError() called.  what:" + what + " extra:" + extra);
+                    return false;
+                }
+            });
+
+            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    Intent intent = new Intent(ON_COMPLETE_BROADCAST_FILTER);
+                    LocalBroadcastManager.getInstance(StreamerMediaService.this).sendBroadcast(intent);
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in reset(): " + e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    public boolean pause() {
+
+        try {
+            if ((mMediaPlayer != null) && (mMediaPlayer.isPlaying())) {
+                mMediaPlayer.pause();
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in pause(): " + e.getMessage());
+            return false;
+        }
+
+        return true;
+
+    }
+
+    public boolean play() {
+
+        try {
+            if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying())) {
                 mMediaPlayer.start();
             }
-        });
 
-        mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
-                Log.d(TAG, "onError() called.  what:" + what + " extra:" + extra);
-                return false;
-            }
-        });
-
-        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                Intent intent = new Intent(ON_COMPLETE_BROADCAST_FILTER);
-                LocalBroadcastManager.getInstance(StreamerMediaService.this).sendBroadcast(intent);
-            }
-        });
-
-    }
-
-    public void pause()  {
-
-        if ((mMediaPlayer != null) && (mMediaPlayer.isPlaying()))  {
-            mMediaPlayer.pause();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in play(): " + e.getMessage());
+            return false;
         }
 
+        return true;
     }
 
-    public void play()  {
+    public boolean stop() {
 
-        if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying())) {
-            mMediaPlayer.start();
+        try {
+            if (mMediaPlayer != null) {
+
+                if (mMediaPlayer.isPlaying()) {
+                    mMediaPlayer.stop();
+                }
+
+                mMediaPlayer.reset();
+                mMediaPlayer.release();
+                mMediaPlayer = null;
+            }
+        } catch (Exception e)  {
+            Log.e(TAG, "Error in stop(): " + e.getMessage());
+            return false;
         }
+
+        return true;
     }
 
-    public void stop()  {
+    public boolean seekTo(int miliSeconds) {
 
-        if (mMediaPlayer != null)  {
-
-            if (mMediaPlayer.isPlaying())  {
-                mMediaPlayer.stop();
+        try {
+            if (mMediaPlayer != null) {
+                mMediaPlayer.seekTo(miliSeconds);
             }
 
-            mMediaPlayer.reset();
-            mMediaPlayer.release();
-            mMediaPlayer = null;
-        }
-    }
-
-    public void seekTo(int miliSeconds)  {
-
-        if (mMediaPlayer != null)  {
-            mMediaPlayer.seekTo(miliSeconds);
+        } catch (Exception e)  {
+            Log.e(TAG, "Error in seekTo(): " + e.getMessage());
+            return false;
         }
 
+        return true;
     }
 
-    public int getDuration()  {
+    public int getDuration() {
         return (mMediaPlayer == null) ? 100 : mMediaPlayer.getDuration();
     }
 
-    public int getLocation()  {
+    public int getLocation() {
         return (mMediaPlayer == null) ? 0 : mMediaPlayer.getCurrentPosition();
     }
 
-    public boolean isPlaying()  {
+    public boolean isPlaying() {
 
         if (mMediaPlayer == null) return false;
         return mMediaPlayer.isPlaying();

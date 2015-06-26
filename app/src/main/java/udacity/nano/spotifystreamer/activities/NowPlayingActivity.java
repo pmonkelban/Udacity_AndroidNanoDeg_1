@@ -13,7 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
+import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.NowPlayingFragment;
 import udacity.nano.spotifystreamer.R;
@@ -85,13 +85,19 @@ public class NowPlayingActivity extends Activity
                 setIsPlaying(mStreamerService.isPlaying());
             }
 
-            // Create a process to update the seek bar location every second
+            /*
+            * Create a process to update the seek bar location every second.
+            * Also keeps the duration and play/pause status up to date.  The play/pause
+            * status can be off if the user clicks it too quickly.  This will straighten
+            * it out every second.
+            */
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (mStreamerService != null) {
                         mNowPlayingFragment.setTrackDuration(mStreamerService.getDuration());
                         mNowPlayingFragment.setSeekBarLocation(mStreamerService.getLocation());
+                        mNowPlayingFragment.setIsPlaying(mStreamerService.isPlaying());
                     }
 
                     if (isStreamerServiceBound) mHandler.postDelayed(this, 1000);
@@ -281,20 +287,26 @@ public class NowPlayingActivity extends Activity
 
     private void queueNextSong() {
         if (isStreamerServiceBound) {
-            mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack]));
+            if (!mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack])))  {
+                Toast.makeText(this, R.string.media_error_playing, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
     @Override
     public void onPlayClicked() {
-        mStreamerService.play();
+        if (!mStreamerService.play())  {
+            Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
+        }
         setIsPlaying(true);
     }
 
     @Override
     public void onPauseClicked() {
         if (isStreamerServiceBound) {
-            mStreamerService.pause();
+            if (!mStreamerService.pause())  {
+                Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
+            }
             setIsPlaying(false);
         }
     }
@@ -319,10 +331,10 @@ public class NowPlayingActivity extends Activity
     @Override
     public void seekTo(int miliSeconds) {
 
-        Log.d(TAG, "Seeking to: " + miliSeconds);
-
         if (isStreamerServiceBound) {
-            mStreamerService.seekTo(miliSeconds);
+            if (!mStreamerService.seekTo(miliSeconds))  {
+                Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

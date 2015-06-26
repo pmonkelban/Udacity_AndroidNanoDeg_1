@@ -5,8 +5,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -28,55 +29,74 @@ public class NowPlayingFragment extends DialogFragment {
         void seekTo(int miliSeconds);
     }
 
+    private final String TAG = getClass().getCanonicalName();
+
     private NowPlayingListener mListener;
 
     private TextView mTextViewArtist;
     private TextView mTextViewTrackName;
     private TextView mTextViewAlbumName;
-    private ImageView mTextViewTrackImage;
+    private ImageView mImageViewTrackImage;
+
+    private SeekBar mSeekBar;
 
     private int mImageWidth;
     private int mImageHeight;
 
-    Button mPrevButton;
-    Button mPlayButton;
-    Button mPauseButton;
-    Button mNextButton;
+    ImageButton mPrevButton;
+    ImageButton mPlayButton;
+    ImageButton mPauseButton;
+    ImageButton mNextButton;
 
-    private String mArtistName;
-    private String mTrackUrl;
-    private String mTrackName;
-    private String mAlbumName;
-    private String mTrackImage;
 
+    private boolean suspendProgressUpdates = false;
+
+    /*
+    * The following setters should not be called until NowPlayingFragment calls
+    * requestContentRefresh().  This notifies the listener that the widgets have
+    * been inflated.
+    * However, we'll check each for null just to be on the safe side.
+    */
     public void setArtistName(String artistName) {
-        this.mArtistName = artistName;
-    }
-
-    public void setTrackUrl(String trackUrl) {
-        this.mTrackUrl = trackUrl;
+        if (mTextViewArtist != null)  mTextViewArtist.setText(artistName);
     }
 
     public void setTrackName(String trackName) {
-        this.mTrackName = trackName;
+        if (mTextViewTrackName != null) mTextViewTrackName.setText(trackName);
     }
 
     public void setAlbumName(String albumName) {
-        this.mAlbumName = albumName;
+        if (mTextViewAlbumName != null)  mTextViewAlbumName.setText(albumName);
     }
 
     public void setTrackImage(String trackImage) {
-        this.mTrackImage = trackImage;
+        if (mImageViewTrackImage != null)  {
+            Picasso.with(getActivity().getApplicationContext())
+                    .load(trackImage)
+                    .resize(mImageWidth, mImageHeight)
+                    .into(mImageViewTrackImage);
+        }
+    }
+
+    public void setTrackDuration(int duration)  {
+        if (mSeekBar != null)  mSeekBar.setMax(duration);
+    }
+
+    public void setSeekBarLocation(int location)  {
+        if ((mSeekBar != null) && (!suspendProgressUpdates)) mSeekBar.setProgress(location);
     }
 
     public void setIsPlaying(boolean isPlaying)  {
 
-        if (isPlaying)  {
-            mPlayButton.setVisibility(View.GONE);
-            mPauseButton.setVisibility(View.VISIBLE);
-        } else  {
-            mPlayButton.setVisibility(View.VISIBLE);
-            mPauseButton.setVisibility(View.GONE);
+        if ((mPlayButton != null) && (mPauseButton != null)) {
+            if (isPlaying) {
+                mPlayButton.setVisibility(View.GONE);
+                mPauseButton.setVisibility(View.VISIBLE);
+
+            } else {
+                mPlayButton.setVisibility(View.VISIBLE);
+                mPauseButton.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -88,7 +108,6 @@ public class NowPlayingFragment extends DialogFragment {
 
         mImageWidth = (int) getActivity().getResources().getDimension(R.dimen.track_image_display_width);
         mImageHeight = (int) getActivity().getResources().getDimension(R.dimen.track_image_display_height);
-
 
         try {
             mListener = (NowPlayingListener) getActivity();
@@ -108,12 +127,35 @@ public class NowPlayingFragment extends DialogFragment {
         mTextViewArtist = (TextView) rootView.findViewById(R.id.artist);
         mTextViewTrackName = (TextView) rootView.findViewById(R.id.track_name);
         mTextViewAlbumName = (TextView) rootView.findViewById(R.id.album_name);
-        mTextViewTrackImage = (ImageView) rootView.findViewById(R.id.track_image);
+        mImageViewTrackImage = (ImageView) rootView.findViewById(R.id.track_image);
 
-        mPrevButton = (Button) rootView.findViewById(R.id.button_prev);
-        mPlayButton = (Button) rootView.findViewById(R.id.button_play);
-        mPauseButton = (Button) rootView.findViewById(R.id.button_pause);
-        mNextButton = (Button) rootView.findViewById(R.id.button_next);
+        mSeekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
+
+        mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // Do Nothing
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Do not allow automatic progress updates while the user is using the SeekBar
+                suspendProgressUpdates = true;
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                mListener.seekTo(seekBar.getProgress());
+                suspendProgressUpdates = false;
+            }
+        });
+
+        mPrevButton = (ImageButton) rootView.findViewById(R.id.button_prev);
+        mPlayButton = (ImageButton) rootView.findViewById(R.id.button_play);
+        mPauseButton = (ImageButton) rootView.findViewById(R.id.button_pause);
+        mNextButton = (ImageButton) rootView.findViewById(R.id.button_next);
 
         mPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -143,24 +185,11 @@ public class NowPlayingFragment extends DialogFragment {
             }
         });
 
+        // Notify the listener that we're ready to receive values.
         mListener.requestContentRefresh();
 
         return rootView;
 
     }
 
-
-    public void refreshContent() {
-
-        mTextViewArtist.setText(mArtistName);
-        mTextViewTrackName.setText(mTrackName);
-        mTextViewAlbumName.setText(mAlbumName);
-
-        Picasso.with(getActivity().getApplicationContext())
-                .load(mTrackImage)
-                .resize(mImageWidth, mImageHeight)
-                .into(mTextViewTrackImage);
-
-
-    }
 }

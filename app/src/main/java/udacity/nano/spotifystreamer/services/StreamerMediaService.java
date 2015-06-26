@@ -9,11 +9,12 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import udacity.nano.spotifystreamer.R;
 
-public class StreamerMediaService extends Service implements MediaPlayer.OnCompletionListener {
+public class StreamerMediaService extends Service  {
 
     private final String TAG = this.getClass().getCanonicalName();
 
@@ -21,7 +22,11 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
 
     private NotificationManager mNotificationManager;
 
+    public static final String ON_COMPLETE_BROADCAST_FILTER = "streamer-media-service-on-complete";
+
     MediaPlayer mMediaPlayer;
+
+    MediaPlayer.OnCompletionListener mOnCompletionListener = null;
 
     private final IBinder mBinder = new StreamerMediaServiceBinder();
 
@@ -51,13 +56,8 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
         return mBinder;
     }
 
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        //TODO: Send a broadcast notice that the song has finished.  NowPlayingActivity will receive this and play the next track.
-        mp.release();
-    }
+    public void reset(Uri trackUri)  {
 
-    public void play(Uri trackUri)  {
         stop();
 
         mMediaPlayer = MediaPlayer.create(this, trackUri);
@@ -80,6 +80,13 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
             }
         });
 
+        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                Intent intent = new Intent(ON_COMPLETE_BROADCAST_FILTER);
+                LocalBroadcastManager.getInstance(StreamerMediaService.this).sendBroadcast(intent);
+            }
+        });
 
     }
 
@@ -91,12 +98,11 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
 
     }
 
-    public void resume()  {
+    public void play()  {
 
-        if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying()))  {
+        if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying())) {
             mMediaPlayer.start();
         }
-
     }
 
     public void stop()  {
@@ -119,6 +125,14 @@ public class StreamerMediaService extends Service implements MediaPlayer.OnCompl
             mMediaPlayer.seekTo(miliSeconds);
         }
 
+    }
+
+    public int getDuration()  {
+        return (mMediaPlayer == null) ? 100 : mMediaPlayer.getDuration();
+    }
+
+    public int getLocation()  {
+        return (mMediaPlayer == null) ? 0 : mMediaPlayer.getCurrentPosition();
     }
 
     public boolean isPlaying()  {

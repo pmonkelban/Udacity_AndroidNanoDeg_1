@@ -71,6 +71,11 @@
 
     </TableLayout>
 
+    <SeekBar
+        android:id="@+id/seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="30000" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -78,30 +83,30 @@
         android:layout_gravity="center_horizontal"
         android:orientation="horizontal">
 
-        <Button
+        <ImageButton
             android:id="@+id/button_prev"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:text="Prev" />
+            android:src="@android:drawable/ic_media_previous" />
 
-        <Button
+        <ImageButton
             android:id="@+id/button_play"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:text="Play"
+            android:src="@android:drawable/ic_media_play"
             android:visibility="gone" />
 
-        <Button
+        <ImageButton
             android:id="@+id/button_pause"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:text="Pause" />
+            android:src="@android:drawable/ic_media_pause" />
 
-        <Button
+        <ImageButton
             android:id="@+id/button_next"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:text="Next" />
+            android:src="@android:drawable/ic_media_next" />
 
     </LinearLayout>
 

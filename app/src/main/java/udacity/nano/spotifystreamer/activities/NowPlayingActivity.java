@@ -1,15 +1,19 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import udacity.nano.spotifystreamer.NowPlayingFragment;
 import udacity.nano.spotifystreamer.R;
@@ -18,7 +22,7 @@ import udacity.nano.spotifystreamer.data.StreamerProvider;
 import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 public class NowPlayingActivity extends Activity
-        implements MediaPlayer.OnCompletionListener, NowPlayingFragment.NowPlayingListener {
+        implements NowPlayingFragment.NowPlayingListener {
 
     public final String TAG = getClass().getCanonicalName();
 
@@ -40,6 +44,13 @@ public class NowPlayingActivity extends Activity
     private String[] mTrackNames;
     private String[] mAlbumNames;
     private String[] mTrackImages;
+
+    /*
+    * Note durations are for the real track.  All samples are 30 seconds.  This value is OK
+    * to display for info, but should not be used to set the SeekBar.
+    */
+    private int[] mDurations;
+
     private boolean[] mTrackExplicit;
 
     private int mCurrentTrack;
@@ -54,6 +65,10 @@ public class NowPlayingActivity extends Activity
     StreamerMediaService mStreamerService;
     boolean isStreamerServiceBound = false;
 
+    // Handles updates to the progress bar.
+    private Handler mHandler = new Handler();
+
+
     private ServiceConnection mStreamerServiceConnection = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -63,16 +78,41 @@ public class NowPlayingActivity extends Activity
             isStreamerServiceBound = true;
 
             // Begin playing the first track
-            if (mFirstTime)  {
+            if (mFirstTime) {
+                queueNextSong();
                 onPlayClicked();
-            } else  {
-                mIsPlaying = mStreamerService.isPlaying();
+            } else {
+                setIsPlaying(mStreamerService.isPlaying());
             }
+
+            // Create a process to update the seek bar location every second
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (mStreamerService != null) {
+                        mNowPlayingFragment.setTrackDuration(mStreamerService.getDuration());
+                        mNowPlayingFragment.setSeekBarLocation(mStreamerService.getLocation());
+                    }
+
+                    if (isStreamerServiceBound) mHandler.postDelayed(this, 1000);
+                }
+            });
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             isStreamerServiceBound = false;
+        }
+    };
+
+    /*
+    * When we receive notice that the track has finished playing, move on
+    * to the next track.
+    */
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            onNextClicked();
         }
     };
 
@@ -107,7 +147,6 @@ public class NowPlayingActivity extends Activity
             * currently playing.
             */
             mIsPlaying = savedInstanceState.getBoolean(BUNDLE_KEY_IS_PLAYING);
-
             mFirstTime = false;
         }
 
@@ -118,51 +157,17 @@ public class NowPlayingActivity extends Activity
 
 
         if ((mTrackSpotifyId == null) || (mArtistSpotifyId == null)) {
-            throw new IllegalArgumentException("Must provide both the spotify track ID and spotify" +
-                    "artist ID for the track you wish to play.");
+            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
+                    "spotify artist ID for the track you wish to play.");
         }
 
-        /*
-        * Load list of tracks for the given artist.
-        * Data is pulled from the Content Provider, and stored in String[]s.
-        */
-        Cursor trackListCursor = getApplicationContext().getContentResolver().query(
-                StreamerContract.GET_TRACKS_CONTENT_URI.buildUpon()
-                        .appendEncodedPath(mArtistSpotifyId).build(),
-                null,
-                null,
-                null,
-                null);
+        // Register to receive track completed broadcast notifications
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mBroadcastReceiver,
+                new IntentFilter(StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER));
 
-        trackListCursor.moveToFirst();
+        loadTrackData();
 
-        mNumberOfTracks = trackListCursor.getCount();
-        mTrackUrls = new String[mNumberOfTracks];
-        mTrackNames = new String[mNumberOfTracks];
-        mAlbumNames = new String[mNumberOfTracks];
-        mTrackImages = new String[mNumberOfTracks];
-        mTrackExplicit = new boolean[mNumberOfTracks];
-
-
-        int i = 0;
-        while (!trackListCursor.isAfterLast()) {
-            mArtistName = trackListCursor.getString(StreamerProvider.IDX_ARTIST_NAME);
-            mTrackUrls[i] = trackListCursor.getString(StreamerProvider.IDX_PREVIEW_URL);
-            mTrackNames[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_NAME);
-            mAlbumNames[i] = trackListCursor.getString(StreamerProvider.IDX_ALBUM_NAME);
-            mTrackImages[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_IMAGE);
-            mTrackExplicit[i] = (trackListCursor.getInt(StreamerProvider.IDX_EXPLICIT) == 1);
-
-            if (mFirstTime && mTrackSpotifyId.equals(
-                    trackListCursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID))) {
-                mCurrentTrack = i;
-            }
-
-            trackListCursor.moveToNext();
-            i++;
-        }
-
-        trackListCursor.close();
 
         // Start the StreamerMedia service.
         Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
@@ -170,6 +175,61 @@ public class NowPlayingActivity extends Activity
         bindService(startMediaServiceIntent, mStreamerServiceConnection,
                 Context.BIND_AUTO_CREATE);
 
+    }
+
+    private void loadTrackData() {
+
+        /*
+        * Load list of tracks for the given artist.
+        * Data is pulled from the Content Provider, and stored in String[]s.
+
+        */
+        Cursor trackListCursor = null;
+
+        try {
+            trackListCursor = getApplicationContext().getContentResolver().query(
+                    StreamerContract.GET_TRACKS_CONTENT_URI.buildUpon()
+                            .appendEncodedPath(mArtistSpotifyId).build(),
+                    null,
+                    null,
+                    null,
+                    null);
+
+            trackListCursor.moveToFirst();
+
+            mNumberOfTracks = trackListCursor.getCount();
+            mTrackUrls = new String[mNumberOfTracks];
+            mTrackNames = new String[mNumberOfTracks];
+            mAlbumNames = new String[mNumberOfTracks];
+            mTrackImages = new String[mNumberOfTracks];
+            mDurations = new int[mNumberOfTracks];
+            mTrackExplicit = new boolean[mNumberOfTracks];
+
+
+            int i = 0;
+            while (!trackListCursor.isAfterLast()) {
+                mArtistName = trackListCursor.getString(StreamerProvider.IDX_ARTIST_NAME);
+                mTrackUrls[i] = trackListCursor.getString(StreamerProvider.IDX_PREVIEW_URL);
+                mTrackNames[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_NAME);
+                mAlbumNames[i] = trackListCursor.getString(StreamerProvider.IDX_ALBUM_NAME);
+                mTrackImages[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_IMAGE);
+                mDurations[i] = trackListCursor.getInt(StreamerProvider.IDX_DURATION);
+                mTrackExplicit[i] = (trackListCursor.getInt(StreamerProvider.IDX_EXPLICIT) == 1);
+
+                if (mFirstTime && mTrackSpotifyId.equals(
+                        trackListCursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID))) {
+                    mCurrentTrack = i;
+                }
+
+                trackListCursor.moveToNext();
+                i++;
+            }
+        } finally {
+
+            if (trackListCursor != null) {
+                trackListCursor.close();
+            }
+        }
     }
 
     public void requestContentRefresh() {
@@ -184,28 +244,24 @@ public class NowPlayingActivity extends Activity
         }
 
         mNowPlayingFragment.setArtistName(mArtistName);
-        mNowPlayingFragment.setTrackUrl(mTrackUrls[mCurrentTrack]);
         mNowPlayingFragment.setTrackName(mTrackNames[mCurrentTrack]);
         mNowPlayingFragment.setAlbumName(mAlbumNames[mCurrentTrack]);
         mNowPlayingFragment.setTrackImage(mTrackImages[mCurrentTrack]);
         mNowPlayingFragment.setIsPlaying(getPlayPauseState());
-
-        mNowPlayingFragment.refreshContent();
-
     }
 
-    private boolean getPlayPauseState()  {
+    private boolean getPlayPauseState() {
 
         if (isStreamerServiceBound) {
-            mIsPlaying = mStreamerService.isPlaying();
+            setIsPlaying(mStreamerService.isPlaying());
         }
 
         return mIsPlaying;
     }
 
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-
+    private void setIsPlaying(boolean isPlaying) {
+        mIsPlaying = isPlaying;
+        mNowPlayingFragment.setIsPlaying(isPlaying);
     }
 
     @Override
@@ -218,33 +274,36 @@ public class NowPlayingActivity extends Activity
             // Ignore exception.
         }
 
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
+
         super.onDestroy();
+    }
+
+    private void queueNextSong() {
+        if (isStreamerServiceBound) {
+            mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack]));
+        }
     }
 
     @Override
     public void onPlayClicked() {
-        if (isStreamerServiceBound) {
-            mStreamerService.play(Uri.parse(mTrackUrls[mCurrentTrack]));
-            mIsPlaying = true;
-            mNowPlayingFragment.setIsPlaying(mIsPlaying);
-        }
-
+        mStreamerService.play();
+        setIsPlaying(true);
     }
 
     @Override
     public void onPauseClicked() {
         if (isStreamerServiceBound) {
             mStreamerService.pause();
-            mIsPlaying = false;
-            mNowPlayingFragment.setIsPlaying(mIsPlaying);
+            setIsPlaying(false);
         }
-
     }
 
     @Override
     public void onNextClicked() {
         mCurrentTrack = (mCurrentTrack + 1) % mNumberOfTracks;
         refreshContent();
+        queueNextSong();
         onPlayClicked();
     }
 
@@ -253,11 +312,15 @@ public class NowPlayingActivity extends Activity
         mCurrentTrack -= 1;
         if (mCurrentTrack < 0) mCurrentTrack = mNumberOfTracks - 1;
         refreshContent();
+        queueNextSong();
         onPlayClicked();
     }
 
     @Override
     public void seekTo(int miliSeconds) {
+
+        Log.d(TAG, "Seeking to: " + miliSeconds);
+
         if (isStreamerServiceBound) {
             mStreamerService.seekTo(miliSeconds);
         }

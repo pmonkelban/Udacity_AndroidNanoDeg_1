@@ -33,7 +33,7 @@
                 android:layout_column="1"
                 android:padding="3dp"
                 android:gravity="start"
-                android:text="@string/artist_name" />
+                android:text="@string/artist_label" />
 
             <TextView
                 android:id="@+id/artist"
@@ -50,7 +50,7 @@
                 android:layout_column="1"
                 android:padding="3dp"
                 android:gravity="start"
-                android:text="@string/track_name" />
+                android:text="@string/track_label" />
 
             <TextView
                 android:id="@+id/track_name"
@@ -68,7 +68,7 @@
                 android:layout_column="1"
                 android:padding="3dp"
                 android:gravity="start"
-                android:text="@string/album_name" />
+                android:text="@string/album_label" />
 
             <TextView
                 android:id="@+id/album_name"

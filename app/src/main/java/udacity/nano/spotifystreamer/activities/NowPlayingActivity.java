@@ -1,6 +1,9 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.NowPlayingFragment;
@@ -30,6 +34,12 @@ public class NowPlayingActivity extends Activity
     public static final String EXTRA_KEY_ARTIST_SPOTIFY_ID = "key_artist_id";
     public static final String BUNDLE_KEY_CURRENT_TRACK = "key_current_track";
     public static final String BUNDLE_KEY_IS_PLAYING = "key_is_playing";
+
+    private static final String ACTION_NO_OP = "action_no_op";
+    private static final String ACTION_PLAY = "action_play";
+    private static final String ACTION_PAUSE = "action_pause";
+    private static final String ACTION_PREV = "action_prev";
+    private static final String ACTION_NEXT = "action_next";
 
 
     public static final String NOW_PLAYING_FRAGMENT = "Now_Playing_Fragment";
@@ -55,6 +65,9 @@ public class NowPlayingActivity extends Activity
 
     private int mCurrentTrack;
     private int mNumberOfTracks;
+
+    private boolean mPlayOnServiceConnect = false;
+    private boolean mPauseOnServiceConnect = false;
 
     private NowPlayingFragment mNowPlayingFragment;
 
@@ -82,6 +95,17 @@ public class NowPlayingActivity extends Activity
                 queueNextSong();
                 onPlayClicked();
             } else {
+
+                if (mPlayOnServiceConnect)  {
+                    mPlayOnServiceConnect = false;
+                    onPlayClicked();
+                }
+
+                if (mPauseOnServiceConnect)  {
+                    mPauseOnServiceConnect = false;
+                    onPauseClicked();
+                }
+
                 setIsPlaying(mStreamerService.isPlaying());
             }
 
@@ -129,6 +153,26 @@ public class NowPlayingActivity extends Activity
         outState.putBoolean(BUNDLE_KEY_IS_PLAYING, mIsPlaying);
     }
 
+    @Override
+    public void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+
+        switch (i.getAction()) {
+            case ACTION_PREV:
+                onPrevClicked();
+                break;
+            case ACTION_NEXT:
+                onNextClicked();
+                break;
+            case ACTION_PAUSE:
+                onPauseClicked();
+                break;
+            case ACTION_PLAY:
+                onPlayClicked();
+                break;
+            default: // Do Nothing
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,13 +202,31 @@ public class NowPlayingActivity extends Activity
 
         Intent callingIntent = getIntent();
 
+        String operation = callingIntent.getStringExtra("operation");
+
+        if ("prev".equals(operation)) {
+            onPrevClicked();
+            return;
+        }
+
+        if ("pause".equals(operation)) {
+            onPauseClicked();
+            return;
+        }
+
+        if ("next".equals(operation)) {
+            onNextClicked();
+            return;
+        }
+
         mTrackSpotifyId = callingIntent.getStringExtra(EXTRA_KEY_TRACK_SPOTIFY_ID);
         mArtistSpotifyId = callingIntent.getStringExtra(EXTRA_KEY_ARTIST_SPOTIFY_ID);
 
 
         if ((mTrackSpotifyId == null) || (mArtistSpotifyId == null)) {
-            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
-                    "spotify artist ID for the track you wish to play.");
+//            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
+//                    "spotify artist ID for the track you wish to play.");
+            return;
         }
 
         // Register to receive track completed broadcast notifications
@@ -272,6 +334,7 @@ public class NowPlayingActivity extends Activity
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "onDestroy() called");
         try {
             if (isStreamerServiceBound) {
                 unbindService(mStreamerServiceConnection);
@@ -285,29 +348,125 @@ public class NowPlayingActivity extends Activity
         super.onDestroy();
     }
 
+    @Override
+    public void onStop() {
+        Log.d(TAG, "onStop() called");
+        super.onStop();
+    }
+
     private void queueNextSong() {
         if (isStreamerServiceBound) {
-            if (!mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack])))  {
+            if (!mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack]))) {
                 Toast.makeText(this, R.string.media_error_playing, Toast.LENGTH_LONG).show();
             }
         }
     }
 
+    /*
+    * Borrowed from:
+    * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
+    */
+    private Notification.Action generateAction(int icon, String title, String intentAction) {
+        Intent intent = new Intent(getApplicationContext(), NowPlayingActivity.class);
+        intent.setAction(intentAction);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 1, intent, 0);
+        return new Notification.Action.Builder(icon, title, pendingIntent).build();
+    }
+
+    /*
+    * Borrowed from:
+    * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
+    */
+    private void buildNotification(Notification.Action action, String trackName, String artistAndAlbum) {
+        Notification.MediaStyle style = new Notification.MediaStyle();
+
+        Intent intent = new Intent(getApplicationContext(), NowPlayingActivity.class);
+        intent.setAction(ACTION_NO_OP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 1, intent, 0);
+        Notification.Builder builder = new Notification.Builder(this)
+                .setSmallIcon(R.drawable.ic_logo)
+                .setContentTitle(trackName)
+                .setContentText(artistAndAlbum)
+                .setDeleteIntent(pendingIntent)
+                .setStyle(style);
+
+        builder.addAction(generateAction(android.R.drawable.ic_media_previous, getResources().getString(R.string.previous), ACTION_PREV));
+        builder.addAction(action);
+        builder.addAction(generateAction(android.R.drawable.ic_media_next, getResources().getString(R.string.next), ACTION_NEXT));
+
+        style.setShowActionsInCompactView(0, 1, 2);
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(1, builder.build());
+    }
+
+
     @Override
     public void onPlayClicked() {
-        if (!mStreamerService.play())  {
-            Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
+
+        if (isStreamerServiceBound) {
+            if (!mStreamerService.play()) {
+                Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
+            }
+
+//        Target bitmapLoadedTarget = new Target() {
+//        Picasso.with(this).load(mTrackImages[mCurrentTrack]).into(bitmapLoadedTarget);
+
+            Notification.Action action = generateAction(
+                    android.R.drawable.ic_media_pause,
+                    getResources().getString(R.string.pause),
+                    ACTION_PAUSE);
+
+            buildNotification(
+                    action,
+                    mTrackNames[mCurrentTrack],
+                    mArtistName + " - " + mAlbumNames[mCurrentTrack]);
+
+            setIsPlaying(true);
+
+        } else {
+
+            mPlayOnServiceConnect = true;
+
+            // Start the StreamerMedia service.
+            Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
+            startService(startMediaServiceIntent);
+            bindService(startMediaServiceIntent, mStreamerServiceConnection,
+                    Context.BIND_AUTO_CREATE);
         }
-        setIsPlaying(true);
     }
+
+
 
     @Override
     public void onPauseClicked() {
         if (isStreamerServiceBound) {
-            if (!mStreamerService.pause())  {
+
+            if (!mStreamerService.pause()) {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
+
+            Notification.Action action = generateAction(
+                    android.R.drawable.ic_media_play,
+                    getResources().getString(R.string.play),
+                    ACTION_PLAY);
+
+            buildNotification(
+                    action,
+                    mTrackNames[mCurrentTrack],
+                    mArtistName + " - " + mAlbumNames[mCurrentTrack]);
+
             setIsPlaying(false);
+
+        } else  {
+
+            mPauseOnServiceConnect = true;
+
+            // Start the StreamerMedia service.
+            Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
+            startService(startMediaServiceIntent);
+            bindService(startMediaServiceIntent, mStreamerServiceConnection,
+                    Context.BIND_AUTO_CREATE);
         }
     }
 
@@ -332,7 +491,7 @@ public class NowPlayingActivity extends Activity
     public void seekTo(int miliSeconds) {
 
         if (isStreamerServiceBound) {
-            if (!mStreamerService.seekTo(miliSeconds))  {
+            if (!mStreamerService.seekTo(miliSeconds)) {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
         }

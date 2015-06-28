@@ -464,7 +464,7 @@ public class NowPlayingActivity extends Activity
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_logo)
+                .setSmallIcon(R.drawable.notes)
                 .setLargeIcon(albumImage)
                 .setContentTitle(trackName)
                 .setContentText(artistAndAlbum)

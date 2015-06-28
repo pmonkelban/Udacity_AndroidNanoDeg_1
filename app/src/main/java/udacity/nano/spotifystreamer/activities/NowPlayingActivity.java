@@ -11,6 +11,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +21,9 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import udacity.nano.spotifystreamer.NowPlayingFragment;
 import udacity.nano.spotifystreamer.R;
@@ -41,6 +47,8 @@ public class NowPlayingActivity extends Activity
     private static final String ACTION_PREV = "action_prev";
     private static final String ACTION_NEXT = "action_next";
 
+    public static final String TRACK_CHANGE_BROADCAST_FILTER = "track_change_broadcast_filter";
+    public static final String TRACK_CHANGE_CURRENT_TRACK_NUM = "track_change_current_track";
 
     public static final String NOW_PLAYING_FRAGMENT = "Now_Playing_Fragment";
 
@@ -54,6 +62,7 @@ public class NowPlayingActivity extends Activity
     private String[] mTrackNames;
     private String[] mAlbumNames;
     private String[] mTrackImages;
+    private String[] mTrackIds;
 
     /*
     * Note durations are for the real track.  All samples are 30 seconds.  This value is OK
@@ -74,17 +83,23 @@ public class NowPlayingActivity extends Activity
     private boolean mFirstTime = false;
     private boolean mIsPlaying = false;
 
-
     StreamerMediaService mStreamerService;
     boolean isStreamerServiceBound = false;
+
+    private Bitmap mNoImageAvailableBitmap;
 
     // Handles updates to the progress bar.
     private Handler mHandler = new Handler();
 
+    // An ID for our notification so we can update or remove them later.
+    private int NOTIFICATION_ID = 27;
 
     private ServiceConnection mStreamerServiceConnection = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName className, IBinder service) {
+
+            if (mNumberOfTracks == 0) return;
+
             StreamerMediaService.StreamerMediaServiceBinder binder =
                     (StreamerMediaService.StreamerMediaServiceBinder) service;
             mStreamerService = binder.getService();
@@ -94,14 +109,15 @@ public class NowPlayingActivity extends Activity
             if (mFirstTime) {
                 queueNextSong();
                 onPlayClicked();
+
             } else {
 
-                if (mPlayOnServiceConnect)  {
+                if (mPlayOnServiceConnect) {
                     mPlayOnServiceConnect = false;
                     onPlayClicked();
                 }
 
-                if (mPauseOnServiceConnect)  {
+                if (mPauseOnServiceConnect) {
                     mPauseOnServiceConnect = false;
                     onPauseClicked();
                 }
@@ -224,9 +240,8 @@ public class NowPlayingActivity extends Activity
 
 
         if ((mTrackSpotifyId == null) || (mArtistSpotifyId == null)) {
-//            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
-//                    "spotify artist ID for the track you wish to play.");
-            return;
+            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
+                    "spotify artist ID for the track you wish to play.");
         }
 
         // Register to receive track completed broadcast notifications
@@ -242,6 +257,9 @@ public class NowPlayingActivity extends Activity
         startService(startMediaServiceIntent);
         bindService(startMediaServiceIntent, mStreamerServiceConnection,
                 Context.BIND_AUTO_CREATE);
+
+        // Load our default "No Image Available" icon into a Bitmap
+        mNoImageAvailableBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.image_not_available);
 
     }
 
@@ -270,6 +288,7 @@ public class NowPlayingActivity extends Activity
             mTrackNames = new String[mNumberOfTracks];
             mAlbumNames = new String[mNumberOfTracks];
             mTrackImages = new String[mNumberOfTracks];
+            mTrackIds = new String[mNumberOfTracks];
             mDurations = new int[mNumberOfTracks];
             mTrackExplicit = new boolean[mNumberOfTracks];
 
@@ -278,6 +297,7 @@ public class NowPlayingActivity extends Activity
             while (!trackListCursor.isAfterLast()) {
                 mArtistName = trackListCursor.getString(StreamerProvider.IDX_ARTIST_NAME);
                 mTrackUrls[i] = trackListCursor.getString(StreamerProvider.IDX_PREVIEW_URL);
+                mTrackIds[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
                 mTrackNames[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_NAME);
                 mAlbumNames[i] = trackListCursor.getString(StreamerProvider.IDX_ALBUM_NAME);
                 mTrackImages[i] = trackListCursor.getString(StreamerProvider.IDX_TRACK_IMAGE);
@@ -292,6 +312,21 @@ public class NowPlayingActivity extends Activity
                 trackListCursor.moveToNext();
                 i++;
             }
+        } catch (Exception e)  {
+
+            /* We can get an exception if, for example, the database cursor comes back null.
+            * In that case, we'll show a Toast and call finish(), since there's nothing that
+            * can be done here.
+            * Set mNumberOfTracks to 0 to indicate an error.
+            * Insert empty values into arrays to prevent further errors.
+            */
+
+            mNumberOfTracks = 0;
+            mCurrentTrack = 0;
+
+            Toast.makeText(getApplicationContext(), R.string.error_restoring_state, Toast.LENGTH_SHORT).show();
+            finish();
+
         } finally {
 
             if (trackListCursor != null) {
@@ -305,6 +340,12 @@ public class NowPlayingActivity extends Activity
     }
 
     private void refreshContent() {
+
+        /*
+        * If there was a error loading track data, don't try to push anything down
+        * to mNowPlayingFragment.
+        */
+        if (mNumberOfTracks == 0) return;
 
         if (mNowPlayingFragment == null) {
             mNowPlayingFragment = (NowPlayingFragment) getFragmentManager()
@@ -335,8 +376,16 @@ public class NowPlayingActivity extends Activity
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy() called");
+
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.cancel(NOTIFICATION_ID);
+
         try {
             if (isStreamerServiceBound) {
+                mStreamerService.stop();
                 unbindService(mStreamerServiceConnection);
             }
         } catch (Exception e) {
@@ -351,12 +400,14 @@ public class NowPlayingActivity extends Activity
     @Override
     public void onStop() {
         Log.d(TAG, "onStop() called");
+
+
         super.onStop();
     }
 
     private void queueNextSong() {
-        if (isStreamerServiceBound) {
-            if (!mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack]))) {
+        if (isStreamerServiceBound && (mNumberOfTracks > 0)) {
+            if (!mStreamerService.reset(Uri.parse(mTrackUrls[mCurrentTrack]), mTrackIds[mCurrentTrack])) {
                 Toast.makeText(this, R.string.media_error_playing, Toast.LENGTH_LONG).show();
             }
         }
@@ -366,9 +417,19 @@ public class NowPlayingActivity extends Activity
     * Borrowed from:
     * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
     */
-    private Notification.Action generateAction(int icon, String title, String intentAction) {
+    private Notification.Action generateAction(int icon, String title, String intentAction,
+                                               String trackId, String artistId) {
         Intent intent = new Intent(getApplicationContext(), NowPlayingActivity.class);
         intent.setAction(intentAction);
+
+        /*
+        * We'll add the current track and artist id into the intent just in case the
+        * NowPlayingActivity has been destroyed before the Notification comes back.  That will
+        * allow us to reconstruct the activity properly.
+        */
+        intent.putExtra(EXTRA_KEY_TRACK_SPOTIFY_ID, trackId);
+        intent.putExtra(EXTRA_KEY_ARTIST_SPOTIFY_ID, artistId);
+
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 1, intent, 0);
         return new Notification.Action.Builder(icon, title, pendingIntent).build();
     }
@@ -377,7 +438,14 @@ public class NowPlayingActivity extends Activity
     * Borrowed from:
     * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
     */
-    private void buildNotification(Notification.Action action, String trackName, String artistAndAlbum) {
+    private void buildNotification(Notification.Action action, String trackName,
+                                   String artistAndAlbum, String trackId, String artistId,
+                                   Bitmap albumImage) {
+
+        if (albumImage == null)  {
+            albumImage = mNoImageAvailableBitmap;
+        }
+
         Notification.MediaStyle style = new Notification.MediaStyle();
 
         Intent intent = new Intent(getApplicationContext(), NowPlayingActivity.class);
@@ -385,42 +453,98 @@ public class NowPlayingActivity extends Activity
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 1, intent, 0);
         Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(R.drawable.ic_logo)
+                .setLargeIcon(albumImage)
                 .setContentTitle(trackName)
                 .setContentText(artistAndAlbum)
                 .setDeleteIntent(pendingIntent)
                 .setStyle(style);
 
-        builder.addAction(generateAction(android.R.drawable.ic_media_previous, getResources().getString(R.string.previous), ACTION_PREV));
+        builder.addAction(generateAction(android.R.drawable.ic_media_previous,
+                getResources().getString(R.string.previous), ACTION_PREV, trackId, artistId));
+
         builder.addAction(action);
-        builder.addAction(generateAction(android.R.drawable.ic_media_next, getResources().getString(R.string.next), ACTION_NEXT));
+
+        builder.addAction(generateAction(android.R.drawable.ic_media_next,
+                getResources().getString(R.string.next), ACTION_NEXT, trackId, artistId));
 
         style.setShowActionsInCompactView(0, 1, 2);
 
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, builder.build());
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.notify(NOTIFICATION_ID, builder.build());
     }
 
+    /*
+    * When the image is downloaded (using the Picasso library) and the
+    * onBitmapLoaded() method is called, this will create a Notification.
+    * If the download fails, a default Bitmap image will be used instead.
+    */
+    private class NotificationTarget implements Target  {
+
+        final int iconId;
+        final String label;
+        final String actionStr;
+
+        NotificationTarget(int iconId, String label, String action)  {
+            this.iconId = iconId;
+            this.label = label;
+            this.actionStr = action;
+        }
+
+        void createNotification(Bitmap bitmap)  {
+
+            Notification.Action action = generateAction(
+                    iconId, label, actionStr, mTrackIds[mCurrentTrack], mArtistSpotifyId);
+
+            buildNotification(
+                    action,
+                    mTrackNames[mCurrentTrack],
+                    mArtistName + " - " + mAlbumNames[mCurrentTrack],
+                    mTrackIds[mCurrentTrack], mArtistSpotifyId, bitmap);
+
+        }
+
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+            createNotification(bitmap);
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+            // Do Nothing
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+            createNotification(mNoImageAvailableBitmap);
+        }
+    }
 
     @Override
     public void onPlayClicked() {
+
+        if (mNumberOfTracks == 0) return;
 
         if (isStreamerServiceBound) {
             if (!mStreamerService.play()) {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
 
-//        Target bitmapLoadedTarget = new Target() {
-//        Picasso.with(this).load(mTrackImages[mCurrentTrack]).into(bitmapLoadedTarget);
-
-            Notification.Action action = generateAction(
+            /*
+            * Use our helper class, defined above, to load an image and then
+            * create a Notification.
+            */
+            Target bitmapTarget = new NotificationTarget(
                     android.R.drawable.ic_media_pause,
                     getResources().getString(R.string.pause),
                     ACTION_PAUSE);
 
-            buildNotification(
-                    action,
-                    mTrackNames[mCurrentTrack],
-                    mArtistName + " - " + mAlbumNames[mCurrentTrack]);
+            Picasso.with(this)
+                    .load(mTrackImages[mCurrentTrack])
+                    .placeholder(getResources().getDrawable(R.drawable.image_loading, null))
+                    .error(getResources().getDrawable(R.drawable.image_not_available, null))
+                    .into(bitmapTarget);
 
             setIsPlaying(true);
 
@@ -437,28 +561,36 @@ public class NowPlayingActivity extends Activity
     }
 
 
-
     @Override
     public void onPauseClicked() {
+
+        if (mNumberOfTracks == 0) return;
+
         if (isStreamerServiceBound) {
 
             if (!mStreamerService.pause()) {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
 
-            Notification.Action action = generateAction(
+            /*
+            * Use our helper class, defined above, to load an image and then
+            * create a Notification.
+            */
+            Target bitmapTarget = new NotificationTarget(
                     android.R.drawable.ic_media_play,
                     getResources().getString(R.string.play),
                     ACTION_PLAY);
 
-            buildNotification(
-                    action,
-                    mTrackNames[mCurrentTrack],
-                    mArtistName + " - " + mAlbumNames[mCurrentTrack]);
+
+            Picasso.with(this)
+                    .load(mTrackImages[mCurrentTrack])
+                    .placeholder(getResources().getDrawable(R.drawable.image_loading, null))
+                    .error(getResources().getDrawable(R.drawable.image_not_available, null))
+                    .into(bitmapTarget);
 
             setIsPlaying(false);
 
-        } else  {
+        } else {
 
             mPauseOnServiceConnect = true;
 
@@ -470,9 +602,15 @@ public class NowPlayingActivity extends Activity
         }
     }
 
+
+
     @Override
     public void onNextClicked() {
-        mCurrentTrack = (mCurrentTrack + 1) % mNumberOfTracks;
+
+        if (mNumberOfTracks == 0) return;
+
+        moveCurrentTrack(1);
+
         refreshContent();
         queueNextSong();
         onPlayClicked();
@@ -480,8 +618,11 @@ public class NowPlayingActivity extends Activity
 
     @Override
     public void onPrevClicked() {
-        mCurrentTrack -= 1;
-        if (mCurrentTrack < 0) mCurrentTrack = mNumberOfTracks - 1;
+
+        if (mNumberOfTracks == 0) return;
+
+        moveCurrentTrack(-1);
+
         refreshContent();
         queueNextSong();
         onPlayClicked();
@@ -490,10 +631,40 @@ public class NowPlayingActivity extends Activity
     @Override
     public void seekTo(int miliSeconds) {
 
+        if (mNumberOfTracks == 0) return;
+
         if (isStreamerServiceBound) {
             if (!mStreamerService.seekTo(miliSeconds)) {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    public static final String EXTRA_SPOTIFY_TRACK_ID = "spotify_id";
+
+
+    private void moveCurrentTrack(int delta)  {
+
+        mCurrentTrack += delta;
+
+        if (mCurrentTrack >= mNumberOfTracks)  mCurrentTrack = 0;
+        if (mCurrentTrack < 0) mCurrentTrack = mNumberOfTracks - 1;
+
+        // Notify TrackListFragment of our new current track.
+        Intent intent = new Intent(TRACK_CHANGE_BROADCAST_FILTER);
+        intent.putExtra(TRACK_CHANGE_CURRENT_TRACK_NUM, mCurrentTrack);
+
+        LocalBroadcastManager.getInstance(NowPlayingActivity.this).sendBroadcast(intent);
+
+        /*
+        * Use a shareIntent to expose the external Spotify URL for the current track.
+        */
+//        Intent sendIntent = new Intent();
+//        sendIntent.setAction(Intent.ACTION_SEND);
+//        sendIntent.putExtra(Intent.EXTRA_TEXT, mTrackUrls[mCurrentTrack]);
+//        sendIntent.setType("text/plain");
+//        startActivity(sendIntent);
+
+
     }
 }

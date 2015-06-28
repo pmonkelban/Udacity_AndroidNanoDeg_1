@@ -2,12 +2,17 @@ package udacity.nano.spotifystreamer;
 
 import android.app.Fragment;
 import android.app.LoaderManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,7 +48,25 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     private int iconWidth;
     private int iconHeight;
 
+    private int mCurrentlySelectedTrack;
+
     private static final int TRACK_LOADER_ID = 1;
+
+    /*
+    * When we receive notice that the track has finished playing, move on
+    * to the next track.
+    */
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive() called");
+
+            mCurrentlySelectedTrack =
+                    intent.getIntExtra(NowPlayingActivity.TRACK_CHANGE_CURRENT_TRACK_NUM, 0);
+
+            mTrackListView.setItemChecked(mCurrentlySelectedTrack, true);
+        }
+    };
 
     /*
      * No arg Constructor.
@@ -60,6 +83,11 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
+        // Register to receive track change broadcast notifications
+        LocalBroadcastManager.getInstance(getActivity().getApplicationContext()).registerReceiver(
+                mBroadcastReceiver,
+                new IntentFilter(NowPlayingActivity.TRACK_CHANGE_BROADCAST_FILTER));
+
     }
 
 
@@ -68,6 +96,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
         super.onSaveInstanceState(outState);
         outState.putParcelable(BUNDLE_KEY_ARTIST_ID, mTrackListUri);
+
     }
 
 
@@ -110,7 +139,6 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
                 String trackSpotifyId  = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
                 String artistSpotifyId = cursor.getString(StreamerProvider.IDX_ARTIST_SPOTIFY_ID);
-
 
                 intent.putExtra(NowPlayingActivity.EXTRA_KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
                 intent.putExtra(NowPlayingActivity.EXTRA_KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);

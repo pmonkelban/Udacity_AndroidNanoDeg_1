@@ -74,6 +74,8 @@ public class ArtistListAdapter extends CursorAdapter {
 
         Picasso.with(context)
                 .load(cursor.getString(IDX_ARTIST_ICON))
+                .placeholder(context.getResources().getDrawable(R.drawable.image_loading, null))
+                .error(context.getResources().getDrawable(R.drawable.image_not_available, null))
                 .resize(iconWidth, iconHeight)
                 .into(viewHolder.icon);
 

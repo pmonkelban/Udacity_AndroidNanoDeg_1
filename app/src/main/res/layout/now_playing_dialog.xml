@@ -9,7 +9,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:adjustViewBounds="true"
         android:maxHeight="@dimen/track_image_display_width"
         android:maxWidth="@dimen/track_image_display_width"
         android:minHeight="@dimen/track_image_display_width"

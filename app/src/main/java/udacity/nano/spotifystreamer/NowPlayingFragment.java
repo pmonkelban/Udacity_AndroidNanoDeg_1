@@ -1,6 +1,7 @@
 package udacity.nano.spotifystreamer;
 
 import android.app.DialogFragment;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -59,25 +60,28 @@ public class NowPlayingFragment extends DialogFragment {
     */
     public void setArtistName(String artistName) {
         if (mTextViewArtist != null)  mTextViewArtist.setText(artistName);
-        setSelectedTextView();
     }
 
     public void setTrackName(String trackName) {
         if (mTextViewTrackName != null) mTextViewTrackName.setText(trackName);
-        setSelectedTextView();
     }
 
     public void setAlbumName(String albumName) {
         if (mTextViewAlbumName != null)  mTextViewAlbumName.setText(albumName);
-        setSelectedTextView();
     }
 
     public void setTrackImage(String trackImage) {
+
+        Resources resources = getActivity().getApplicationContext().getResources();
+
         if (mImageViewTrackImage != null)  {
             Picasso.with(getActivity().getApplicationContext())
                     .load(trackImage)
+                    .placeholder(resources.getDrawable(R.drawable.image_loading, null))
+                    .error(resources.getDrawable(R.drawable.image_not_available, null))
                     .resize(mImageWidth, mImageHeight)
-                    .into(mImageViewTrackImage);
+                    .into(mImageViewTrackImage)
+            ;
         }
     }
 
@@ -101,33 +105,6 @@ public class NowPlayingFragment extends DialogFragment {
                 mPauseButton.setVisibility(View.GONE);
             }
         }
-    }
-
-    /*
-    * Sets the longest text field to selected.
-    * Only the selected TextView gets scrolled horizontally, so this just goes with the longest.
-    * Ties go to track first, then album, then artist.
-    */
-    private void setSelectedTextView()  {
-
-//        int artistLength = (mTextViewArtist == null) ? 0 : mTextViewArtist.getText().length();
-//        int albumLength = (mTextViewAlbumName == null) ? 0 : mTextViewAlbumName.getText().length();
-//        int trackLength = (mTextViewTrackName == null) ? 0 : mTextViewTrackName.getText().length();
-//
-//        if ((trackLength > 0) && (trackLength >= albumLength) && (trackLength >= artistLength))  {
-//            mTextViewTrackName.setSelected(true);
-//            return;
-//        }
-//
-//        if ((albumLength > 0) && (albumLength > trackLength) && (albumLength >= artistLength))  {
-//            mTextViewAlbumName.setSelected(true);
-//            return;
-//        }
-//
-//        if ((artistLength > 0) && (artistLength > trackLength) && (artistLength > albumLength))  {
-//            mTextViewArtist.setSelected(true);
-//            return;
-//        }
     }
 
 

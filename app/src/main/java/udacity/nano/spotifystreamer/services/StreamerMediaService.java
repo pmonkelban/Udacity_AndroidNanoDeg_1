@@ -56,7 +56,7 @@ public class StreamerMediaService extends Service {
         return mBinder;
     }
 
-    public boolean reset(Uri trackUri) {
+    public boolean reset(Uri trackUri, String spotifyId) {
 
         try {
             stop();

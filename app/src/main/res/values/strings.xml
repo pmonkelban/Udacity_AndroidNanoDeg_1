@@ -12,22 +12,23 @@
     <string name="next">Next</string>
     <string name="stop">Stop</string>
 
+    <string name="action_settings">Settings</string>
+    <string name="action_share">Share Current Track</string>
 
     <string name="enter_artist_name">Enter Artist\'s Name</string>
-    <string name="action_settings">Settings</string>
     <string name="title_activity_artist_search">ArtistSearch</string>
 
     <string name="artist_list_empty">No Artists Found</string>
     <string name="track_list_empty">No Tracks Found</string>
-    <string name="artist_list_error">Error retreiving Artist Data (Network Unavailable?)</string>
-    <string name="track_list_error">Error retreiving Track Data (Network Unavailable?)</string>
+    <string name="artist_list_error">Error retrieving Artist Data (Network Unavailable?)</string>
+    <string name="track_list_error">Error retrieving Track Data (Network Unavailable?)</string>
 
     <string name="search">Search</string>
     <string name="no_search_string">Please enter the name of an artist</string>
     <string name="title_activity_top_tracks">Top Tracks</string>
 
-    <string name="error_fetching_artists">Error retreiving list of Artists</string>
-    <string name="error_fetching_tracks">Error retreiving list of Tracks</string>
+    <string name="error_fetching_artists">Error retrieving list of Artists</string>
+    <string name="error_fetching_tracks">Error retrieving list of Tracks</string>
     <string name="error_restoring_state">Error restoring stage.  Please close the app and re-start.</string>
 
     <string name="spotify_streamer_running">Spotify Streamer is Running</string>
@@ -35,5 +36,13 @@
 
     <string name="media_error_playing">Error playing Track (Network Unavailable?)</string>
     <string name="media_error_general">Error in Media Player.</string>
+
+    <string name="title_activity_settings">Spotify Streamer - Settings</string>
+    <string name="prefs_allow_explict_title">Allow Explicit Content?</string>
+    <string name="prefs_allow_explicit_summary">If unchecked tracks marked as explicit will not be shown</string>
+    <string name="prefs_country_code_title">Country Code:</string>
+    <string name="prefs_country_code_summary">Enter the ISO Country code for your location.</string>
+    <string name="prefs_default_country_code">US</string>
+    <string name="invalid_country_code">Warning! %1$s is not a recognized country code</string>
 
 </resources>

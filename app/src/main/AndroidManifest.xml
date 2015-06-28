@@ -13,17 +13,16 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-
         <activity
             android:name=".activities.MainActivity"
             android:label="@string/app_name"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".activities.TrackListActivity"
             android:label="@string/title_activity_top_tracks"
@@ -32,18 +31,18 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.MainActivity" />
         </activity>
-
-        <activity android:name=".activities.NowPlayingActivity"
+        <activity
+            android:name=".activities.NowPlayingActivity"
             android:label="@string/now_playing"
             android:launchMode="singleTop"
             android:theme="@android:style/Theme.Dialog" />
 
         <provider
-            android:authorities="udacity.nano.spotifystreamer"
-            android:name=".data.StreamerProvider" />
+            android:name=".data.StreamerProvider"
+            android:authorities="udacity.nano.spotifystreamer" />
 
         <!-- Receive events such as unplugging headphones, so that we can pause playback -->
-        <receiver android:name=".utils.MusicIntentReceiver">
+        <receiver android:name=".utils.MusicIntentReceiver" >
             <intent-filter>
                 <action android:name="android.media.AUDIO_BECOMING_NOISY" />
             </intent-filter>
@@ -53,6 +52,10 @@
             android:name=".services.StreamerMediaService"
             android:exported="false" />
 
+        <activity
+            android:name=".activities.SettingsActivity"
+            android:label="@string/title_activity_settings" >
+        </activity>
     </application>
 
 </manifest>

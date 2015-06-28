@@ -2,11 +2,13 @@ package udacity.nano.spotifystreamer.data;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.text.ParseException;
@@ -14,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -27,6 +28,7 @@ import kaaes.spotify.webapi.android.models.Pager;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import udacity.nano.spotifystreamer.R;
+import udacity.nano.spotifystreamer.activities.MainActivity;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
@@ -159,10 +161,6 @@ public class StreamerProvider extends ContentProvider {
     @Override
     public boolean onCreate() {
 
-        // Get the user's country, and store it in a map.
-        // TODO: Get Location from preferences, or based on actual location.
-        mLocationMap.put(SpotifyService.COUNTRY, Locale.getDefault().getCountry());
-
         mDbHelper = new StreamerDbHelper(getContext());
 
         if (mSpotifyService == null) {
@@ -204,7 +202,7 @@ public class StreamerProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
-        if (retCursor != null)  retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+        if (retCursor != null) retCursor.setNotificationUri(getContext().getContentResolver(), uri);
 
         return retCursor;
     }
@@ -374,28 +372,7 @@ public class StreamerProvider extends ContentProvider {
         int n = 0;
 
         for (Artist artist : pager.items) {
-
-            /*
-            * Create / Update Artist data.
-            * Note, we don't try to perform an Update, always insert.  The table definition
-            * has a unique constraint on the Artist table such that if a duplicate
-            * spotify id is entered, the existing record will be replaced.
-            */
-            values = new ContentValues();
-            values.put(StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID, artist.id);
-            values.put(StreamerContract.ArtistEntry.COLUMN_NAME, artist.name);
-
-            Image i = ImageUtils.getClosestImageSize(artist.images, idealIconWidth,
-                    idealIconHeight);
-
-            values.put(StreamerContract.ArtistEntry.COLUMN_ICON, (i == null) ? null : i.url);
-
-            long artistRecordId = db.insert(StreamerContract.ArtistEntry.TABLE_NAME, null, values);
-
-            if (artistRecordId < 0) {
-                throw new android.database.SQLException(
-                        "Error creating Artist record.  artistId:" + artist.id);
-            }
+            long artistRecordId = createOrUpdateArtistRecord(db, artist);
 
             /*
             * Create ArtistQuery Record.
@@ -430,6 +407,33 @@ public class StreamerProvider extends ContentProvider {
                 null,
                 null);
 
+    }
+
+    private long createOrUpdateArtistRecord(SQLiteDatabase db, Artist artist) {
+        ContentValues values;
+
+        /*
+        * Create / Update Artist data.
+        * Note, we don't try to perform an Update, always insert.  The table definition
+        * has a unique constraint on the Artist table such that if a duplicate
+        * spotify id is entered, the existing record will be replaced.
+        */
+        values = new ContentValues();
+        values.put(StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID, artist.id);
+        values.put(StreamerContract.ArtistEntry.COLUMN_NAME, artist.name);
+
+        Image i = ImageUtils.getClosestImageSize(artist.images, idealIconWidth,
+                idealIconHeight);
+
+        values.put(StreamerContract.ArtistEntry.COLUMN_ICON, (i == null) ? null : i.url);
+
+        long artistRecordId = db.insert(StreamerContract.ArtistEntry.TABLE_NAME, null, values);
+
+        if (artistRecordId < 0) {
+            throw new android.database.SQLException(
+                    "Error creating Artist record.  artistId:" + artist.id);
+        }
+        return artistRecordId;
     }
 
     /*
@@ -500,6 +504,23 @@ public class StreamerProvider extends ContentProvider {
         }
     }
 
+    private long lookupAndCreateArtist(String artistSpotifyId, SQLiteDatabase db) {
+
+        try {
+            Artist artist = mSpotifyService.getArtist(artistSpotifyId);
+            Log.d(TAG, "Successfully retrieved artist artist: " + artistSpotifyId);
+            long id = createOrUpdateArtistRecord(db, artist);
+            return id;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to fetch data for artist: " + artistSpotifyId);
+            Log.e(TAG, "Error: " + e.getMessage());
+
+            return 0;
+
+        }
+    }
+
     /*
     * Gets tracks for the given artist where the artist's spotify ID is the last
     * segment of the given Uri.
@@ -508,24 +529,37 @@ public class StreamerProvider extends ContentProvider {
 
         final String spotifyId = uri.getLastPathSegment();
 
-        Cursor artistLookupCursor = db.query(
-                StreamerContract.ArtistEntry.TABLE_NAME,
-                new String[]{StreamerContract.ArtistEntry._ID},
-                StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID + " =?",
-                new String[]{spotifyId},
-                null,
-                null,
-                null);
+        long artistId;
 
-        if (!artistLookupCursor.moveToFirst()) {
-            Log.e(TAG, "Error: Unable to find Artist record for artist: " + spotifyId);
-            return null;
+        Cursor artistLookupCursor = null;
+
+        try {
+            artistLookupCursor = db.query(
+                    StreamerContract.ArtistEntry.TABLE_NAME,
+                    new String[]{StreamerContract.ArtistEntry._ID},
+                    StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID + " =?",
+                    new String[]{spotifyId},
+                    null,
+                    null,
+                    null);
+
+            /*
+            * The artist record may be gone, so query Spotify and re-create it.
+            * This can happen if the preferences are change and the cache is flushed,
+            * then the user clicks on a already displayed artist.
+            */
+
+            if (artistLookupCursor.moveToFirst()) {
+                artistId = artistLookupCursor.getInt(
+                        artistLookupCursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
+
+            } else {
+                artistId = lookupAndCreateArtist(spotifyId, db);
+            }
+
+        } finally {
+            if (artistLookupCursor != null) artistLookupCursor.close();
         }
-
-        int artistId = artistLookupCursor.getInt(
-                artistLookupCursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
-
-        artistLookupCursor.close();
 
         return getTracks(artistId, spotifyId, db, cacheCutOffTime);
 
@@ -539,6 +573,14 @@ public class StreamerProvider extends ContentProvider {
                              Date cacheCutOffTime) {
 
         Log.d(TAG, "getTracks() called. artistId:" + artistId);
+
+        // Get the user's country, and store it in a map.
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String countryCode = settings.getString(MainActivity.PREF_COUNTRY_CODE, "US").toUpperCase();
+        mLocationMap.put(SpotifyService.COUNTRY, countryCode);
+
+        // Note if explicit tracks are allowed
+        boolean allowExplicit = settings.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
 
         /*
         * Get the Artists last tracks updated time.
@@ -558,7 +600,7 @@ public class StreamerProvider extends ContentProvider {
 
             String tracksLastUpdatedStr = artistLastUpdateTimeCursor.getString(
                     artistLastUpdateTimeCursor.getColumnIndex(
-                    StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED));
+                            StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED));
 
             try {
                 if (tracksLastUpdatedStr != null) {
@@ -606,9 +648,9 @@ public class StreamerProvider extends ContentProvider {
 
                 try {
 
-                /*
-                * Fetch Tracks from Spotify
-                */
+                    /*
+                    * Fetch Tracks from Spotify
+                    */
                     Tracks result = mSpotifyService.getArtistTopTrack(artistSpotifyId, mLocationMap);
                     if (result != null) topTracks = result.tracks;
 
@@ -661,35 +703,38 @@ public class StreamerProvider extends ContentProvider {
 
         for (Track track : topTracks) {
 
+            if (allowExplicit || !track.explicit) {
+
              /*
             * Create Track data.
             */
-            ContentValues values = new ContentValues();
-            values.put(StreamerContract.TrackEntry.COLUMN_SPOTIFY_ID, track.id);
-            values.put(StreamerContract.TrackEntry.COLUMN_ARTIST_ID, artistId);
-            values.put(StreamerContract.TrackEntry.COLUMN_TITLE, track.name);
-            values.put(StreamerContract.TrackEntry.COLUMN_ALBUM, track.album.name);
-            values.put(StreamerContract.TrackEntry.COLUMN_DURATION, track.duration_ms);
-            values.put(StreamerContract.TrackEntry.COLUMN_EXPLICIT, track.explicit);
+                ContentValues values = new ContentValues();
+                values.put(StreamerContract.TrackEntry.COLUMN_SPOTIFY_ID, track.id);
+                values.put(StreamerContract.TrackEntry.COLUMN_ARTIST_ID, artistId);
+                values.put(StreamerContract.TrackEntry.COLUMN_TITLE, track.name);
+                values.put(StreamerContract.TrackEntry.COLUMN_ALBUM, track.album.name);
+                values.put(StreamerContract.TrackEntry.COLUMN_DURATION, track.duration_ms);
+                values.put(StreamerContract.TrackEntry.COLUMN_EXPLICIT, track.explicit);
 
-            // Sometimes is_playable is null.  In this case, I've found that it is playable.
-            values.put(StreamerContract.TrackEntry.COLUMN_PLAYABLE,
-                    ((track.is_playable == null) || (track.is_playable)));
+                // Sometimes is_playable is null.  In this case, I've found that it is playable.
+                values.put(StreamerContract.TrackEntry.COLUMN_PLAYABLE,
+                        ((track.is_playable == null) || (track.is_playable)));
 
-            values.put(StreamerContract.TrackEntry.COLUMN_POPULARITY, track.popularity);
-            values.put(StreamerContract.TrackEntry.COLUMN_PREVIEW, track.preview_url);
+                values.put(StreamerContract.TrackEntry.COLUMN_POPULARITY, track.popularity);
+                values.put(StreamerContract.TrackEntry.COLUMN_PREVIEW, track.preview_url);
 
-            Image i = ImageUtils.getClosestImageSize(track.album.images, idealIconWidth,
-                    idealIconHeight);
+                Image i = ImageUtils.getClosestImageSize(track.album.images, idealIconWidth,
+                        idealIconHeight);
 
-            values.put(StreamerContract.TrackEntry.COLUMN_ICON, (i == null) ? null : i.url);
+                values.put(StreamerContract.TrackEntry.COLUMN_ICON, (i == null) ? null : i.url);
 
-            i = ImageUtils.getClosestImageSize(track.album.images, idealImageWidth, idealImageHeight);
+                i = ImageUtils.getClosestImageSize(track.album.images, idealImageWidth, idealImageHeight);
 
-            values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
+                values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
 
-            if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0) {
-                throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
+                if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0) {
+                    throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
+                }
             }
         }
 
@@ -804,8 +849,9 @@ public class StreamerProvider extends ContentProvider {
     }
 
     /*
-    * WARNING: Calling this deletes all cached data!
-    * This should only be used to reset the database to it's initial state (i.e. for Testing)
+    * This should be called when the user's Preferences change.  If the country code,
+    * or allow explicit settings change, the cache data wouldn't be affected.  So it's
+    * a good idea to flush the cache at that point and start fresh.
     */
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {

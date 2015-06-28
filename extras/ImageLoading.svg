@@ -17,9 +17,9 @@
    version="1.1"
    inkscape:version="0.48.4 r9939"
    sodipodi:docname="ImageLoading.svg"
-   inkscape:export-filename="/home/patrick/Projects/Udacity/NanoDegree/SpotifyStreamer/app/src/main/res/drawable/NoImageAvailable.png"
-   inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-filename="/home/patrick/Projects/Udacity/NanoDegree/SpotifyStreamer/app/src/main/res/drawable/image_loading.png"
+   inkscape:export-xdpi="28.799999"
+   inkscape:export-ydpi="28.799999">
   <defs
      id="defs4">
     <linearGradient
@@ -78,9 +78,9 @@
      inkscape:snap-bbox="true"
      inkscape:bbox-paths="true"
      inkscape:bbox-nodes="true"
-     inkscape:window-width="1920"
+     inkscape:window-width="1855"
      inkscape:window-height="1176"
-     inkscape:window-x="3840"
+     inkscape:window-x="65"
      inkscape:window-y="24"
      inkscape:window-maximized="1">
     <sodipodi:guide

@@ -12,8 +12,7 @@
         android:maxHeight="@dimen/track_image_display_width"
         android:maxWidth="@dimen/track_image_display_width"
         android:minHeight="@dimen/track_image_display_width"
-        android:minWidth="@dimen/track_image_display_width"
-        android:scaleType="fitXY" />
+        android:minWidth="@dimen/track_image_display_width"/>
 
     <!--
         android:maxHeight="@dimen/track_image_height"

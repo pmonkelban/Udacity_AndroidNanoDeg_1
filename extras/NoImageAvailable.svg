@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="400"
+   height="400"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="NoImageAvailable.svg"
+   inkscape:export-filename="/home/patrick/Projects/Udacity/NanoDegree/SpotifyStreamer/app/src/main/res/drawable/NoImageAvailable.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="linearGradient5326">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5328" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop5330" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3814"
+       osb:paint="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:0.82191783;"
+         offset="0"
+         id="stop3816" />
+    </linearGradient>
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective3004" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient5326"
+       id="radialGradient5332"
+       cx="533.57141"
+       cy="852.36218"
+       fx="533.57141"
+       fy="852.36218"
+       r="200"
+       gradientUnits="userSpaceOnUse"
+       spreadMethod="reflect"
+       gradientTransform="translate(-333.07141,0.49999738)" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="244.86171"
+     inkscape:cy="151.97693"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-global="true"
+     inkscape:snap-bbox="true"
+     inkscape:bbox-paths="true"
+     inkscape:bbox-nodes="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1176"
+     inkscape:window-x="1920"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1">
+    <sodipodi:guide
+       position="0,0"
+       orientation="0,400"
+       id="guide3804" />
+    <sodipodi:guide
+       position="400,0"
+       orientation="-400,0"
+       id="guide3806" />
+    <sodipodi:guide
+       position="400,400"
+       orientation="0,-400"
+       id="guide3808" />
+    <sodipodi:guide
+       position="0,400"
+       orientation="400,0"
+       id="guide3810" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-652.36218)">
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3790"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       transform="matrix(1.0472918,0,0,1.651826,-190.87007,159.65828)"><flowRegion
+         id="flowRegion3792"><rect
+           id="rect3794"
+           width="422.85715"
+           height="451.42856"
+           x="162.85715"
+           y="312.36218" /></flowRegion><flowPara
+         id="flowPara3796"
+         style="font-size:56px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold">No</flowPara><flowPara
+         id="flowPara3798"
+         style="font-size:56px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold">Image</flowPara><flowPara
+         id="flowPara3800"
+         style="font-size:56px;font-weight:bold;text-align:center;text-anchor:middle;-inkscape-font-specification:Sans Bold">Available</flowPara></flowRoot>    <rect
+       style="opacity:0.5;fill:url(#radialGradient5332);fill-opacity:1"
+       id="rect3812"
+       width="400"
+       height="400"
+       x="0.5"
+       y="652.86218" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 400,400 0,0"
+       id="path3820"
+       inkscape:connector-curvature="0"
+       transform="translate(0,652.36218)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 0,400 400,0"
+       id="path3822"
+       inkscape:connector-curvature="0"
+       transform="translate(0,652.36218)" />
+  </g>
+</svg>

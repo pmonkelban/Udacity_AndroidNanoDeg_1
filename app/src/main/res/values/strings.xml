@@ -20,6 +20,7 @@
 
     <string name="artist_list_empty">No Artists Found</string>
     <string name="track_list_empty">No Tracks Found</string>
+    <string name="track_list_no_data">No Track Data Available</string>
     <string name="artist_list_error">Error retrieving Artist Data (Network Unavailable?)</string>
     <string name="track_list_error">Error retrieving Track Data (Network Unavailable?)</string>
 

@@ -48,8 +48,6 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     private int iconWidth;
     private int iconHeight;
 
-    private int mCurrentlySelectedTrack;
-
     private static final int TRACK_LOADER_ID = 1;
 
     /*
@@ -61,10 +59,12 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive() called");
 
-            mCurrentlySelectedTrack =
+            mPosition =
                     intent.getIntExtra(NowPlayingActivity.TRACK_CHANGE_CURRENT_TRACK_NUM, 0);
 
-            mTrackListView.setItemChecked(mCurrentlySelectedTrack, true);
+            mTrackListView.setItemChecked(mPosition, true);
+            mTrackListView.smoothScrollToPosition(mPosition);
+
         }
     };
 

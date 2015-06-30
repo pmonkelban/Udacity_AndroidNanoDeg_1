@@ -41,12 +41,7 @@ public class SettingsActivity extends PreferenceActivity
 
         addPreferencesFromResource(R.xml.pref_general);
 
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
-
-
-        /*
+         /*
         * Get the most recent values for the preferences.
         */
         SharedPreferences prefs =
@@ -57,6 +52,13 @@ public class SettingsActivity extends PreferenceActivity
 
         mLastExplicitValue = prefs.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
         mLastOnLockValue = prefs.getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
+
+
+        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
+        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
+        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
+
+
 
     }
 

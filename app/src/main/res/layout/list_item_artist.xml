@@ -15,7 +15,8 @@
         android:maxHeight="@dimen/icon_height"
         android:maxWidth="@dimen/icon_width"
         android:minHeight="@dimen/icon_height"
-        android:minWidth="@dimen/icon_width" />
+        android:minWidth="@dimen/icon_width"
+        android:padding="@dimen/icon_padding"/>
 
     <TextView
         android:id="@+id/text_artists_name"

@@ -32,9 +32,17 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
     static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
 
-    public static final String PREF_CURRENT_TRACK = "prefs_current_track";
+    // Used to format the currently playing track when shared.
+    private final String NEWLINE = System.getProperty("line.separator");
+
+    public static final String PREF_CURRENT_TRACK_NAME = "prefs_current_track_name";
+    public static final String PREF_CURRENT_ALBUM = "prefs_current_album";
+    public static final String PREF_CURRENT_ARTIST = "prefs_current_artist";
+    public static final String PREF_CURRENT_TRACK_URL = "prefs_current_track_url";
+
     public static final String PREF_COUNTRY_CODE = "prefs_country_code";
     public static final String PREF_ALLOW_EXPLICIT = "prefs_allow_explicit";
+    public static final String PREF_ALLOW_ON_LOCK = "prefs_show_on_lock";
 
     private boolean mIsTwoPanel = false;
 
@@ -208,18 +216,30 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
 
             // The Uri of the most recently played track is stored in preferences.
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            String currentTrack = settings.getString(PREF_CURRENT_TRACK, "");
+            String currentTrackUrl = settings.getString(PREF_CURRENT_TRACK_URL, null);
 
-            if ((currentTrack == null) || (currentTrack.length() == 0)) {
+
+            if ((currentTrackUrl == null) || (currentTrackUrl.length() == 0)) {
                 Toast.makeText(this, getString(R.string.share_no_tracks_played), Toast.LENGTH_SHORT).show();
 
             } else  {
+
+                String currentArtist = settings.getString(PREF_CURRENT_ARTIST, "");
+                String currentAlbum = settings.getString(PREF_CURRENT_ALBUM, "");
+                String currentTrackName = settings.getString(PREF_CURRENT_TRACK_NAME, "");
+
                 /*
                 * Use a shareIntent to expose the external Spotify URL for the current track.
                 */
+
+                String shareMsg = currentTrackUrl + NEWLINE + NEWLINE +
+                        "Artist: " + currentArtist + NEWLINE +
+                        "Track: " + currentTrackName + NEWLINE +
+                        "Album: " + currentAlbum;
+
                 Intent sendIntent = new Intent();
                 sendIntent.setAction(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_TEXT, currentTrack);
+                sendIntent.putExtra(Intent.EXTRA_TEXT, shareMsg);
                 sendIntent.setType("text/plain");
                 startActivity(sendIntent);
 
@@ -247,7 +267,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             getFragmentManager()
                     .beginTransaction()
                     .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
-                    .commit();
+                    .commitAllowingStateLoss();
         } else {
             Intent intent = new Intent(this, TrackListActivity.class);
             intent.setData(trackListUri);
@@ -255,6 +275,13 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
         }
     }
 
+    /*
+    * Without this, the app throws an
+    * IllegalStateException: Can not perform this action after onSaveInstanceState
+    * See a related issue here:
+    * http://stackoverflow.com/questions/7575921/illegalstateexception-can-not-perform-this-action-after-onsaveinstancestate-h
+    * But even setting commitAllowingStateLoss() did not stop the error.
+    */
     @Override
     public void onSaveInstanceState(Bundle outState)  {
         // do not call super.onSaveInstanceState

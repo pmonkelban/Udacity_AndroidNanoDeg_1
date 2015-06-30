@@ -406,8 +406,6 @@ public class NowPlayingActivity extends Activity
     @Override
     public void onStop() {
         Log.d(TAG, "onStop() called");
-
-
         super.onStop();
     }
 
@@ -463,13 +461,25 @@ public class NowPlayingActivity extends Activity
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
+        /*
+        * Should the notification be displayed on the lock screen?
+        */
+        boolean allowNotificationOnLockScreen =
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                        .getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
+
+        final int visibility =
+                (allowNotificationOnLockScreen) ?  Notification.VISIBILITY_PUBLIC
+                        : Notification.VISIBILITY_SECRET;
+
         Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(R.drawable.notes)
                 .setLargeIcon(albumImage)
                 .setContentTitle(trackName)
                 .setContentText(artistAndAlbum)
                 .setDeleteIntent(pendingIntent)
-                .setStyle(style);
+                .setStyle(style)
+                .setVisibility(visibility);
 
         builder.addAction(generateAction(android.R.drawable.ic_media_previous,
                 getResources().getString(R.string.previous), ACTION_PREV, trackId, artistId));
@@ -539,11 +549,24 @@ public class NowPlayingActivity extends Activity
         if (mNumberOfTracks == 0) return;
 
         if (isStreamerServiceBound) {
-            if (!mStreamerService.play()) {
+            if (mStreamerService.play()) {
+
+                // Save the current track's URL in shared preferences
+                SharedPreferences settings =
+                        PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putString(MainActivity.PREF_CURRENT_TRACK_NAME, mTrackNames[mCurrentTrack]);
+                editor.putString(MainActivity.PREF_CURRENT_TRACK_URL, mTrackUrls[mCurrentTrack]);
+                editor.putString(MainActivity.PREF_CURRENT_ALBUM, mAlbumNames[mCurrentTrack]);
+                editor.putString(MainActivity.PREF_CURRENT_ARTIST, mArtistName);
+                editor.commit();
+
+                issueNotification();
+
+            } else {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
             }
-
-            issueNotification();
 
         } else {
 
@@ -595,11 +618,11 @@ public class NowPlayingActivity extends Activity
         String label;
         String action;
 
-        if (isPlaying())  {
+        if (isPlaying()) {
             iconId = android.R.drawable.ic_media_pause;
             label = getResources().getString(R.string.pause);
             action = ACTION_PAUSE;
-        } else  {
+        } else {
             iconId = android.R.drawable.ic_media_play;
             label = getResources().getString(R.string.play);
             action = ACTION_PLAY;
@@ -613,7 +636,7 @@ public class NowPlayingActivity extends Activity
                 .error(getResources().getDrawable(R.drawable.image_not_available, null))
                 .into(bitmapTarget);
 
-        setIsPlaying(false);
+//        setIsPlaying(false);
 
     }
 
@@ -623,7 +646,6 @@ public class NowPlayingActivity extends Activity
         if (mNumberOfTracks == 0) return;
 
         moveCurrentTrack(1);
-
         refreshContent();
         queueNextSong();
         onPlayClicked();
@@ -635,7 +657,6 @@ public class NowPlayingActivity extends Activity
         if (mNumberOfTracks == 0) return;
 
         moveCurrentTrack(-1);
-
         refreshContent();
         queueNextSong();
         onPlayClicked();
@@ -666,14 +687,6 @@ public class NowPlayingActivity extends Activity
         intent.putExtra(TRACK_CHANGE_CURRENT_TRACK_NUM, mCurrentTrack);
 
         LocalBroadcastManager.getInstance(NowPlayingActivity.this).sendBroadcast(intent);
-
-        // Save the current tracks URL in shared preferences
-        SharedPreferences settings =
-                PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putString(MainActivity.PREF_CURRENT_TRACK, mTrackUrls[mCurrentTrack]);
-        editor.apply();
 
     }
 }

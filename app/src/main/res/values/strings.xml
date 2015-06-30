@@ -40,11 +40,10 @@
 
     <string name="title_activity_settings">Spotify Streamer - Settings</string>
     <string name="prefs_allow_explict_title">Allow Explicit Content?</string>
-    <string name="prefs_allow_explicit_summary">If unchecked tracks marked as explicit will not be shown</string>
+    <string name="prefs_show_on_lock_title">Show Notifications on the Lock Screen?</string>
     <string name="prefs_country_code_title">Country Code:</string>
-    <string name="prefs_country_code_summary">Enter the ISO Country code for your location.</string>
     <string name="prefs_default_country_code">US</string>
-    <string name="invalid_country_code">Warning! %1$s is not a recognized country code</string>
+    <string name="invalid_country_code">%1$s is not a recognized country code</string>
 
     <string name="share_no_tracks_played">No tracks have been played.</string>
 </resources>

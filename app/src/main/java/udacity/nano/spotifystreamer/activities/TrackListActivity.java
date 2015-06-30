@@ -7,6 +7,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.TrackListFragment;
@@ -58,13 +59,15 @@ public class TrackListActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_share) {
-            SharedPreferences settings =
-                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-            String currentTrack = settings.getString(MainActivity.PREF_CURRENT_TRACK, "");
+            // The Uri of the most recently played track is stored in preferences.
+            SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            String currentTrack = settings.getString(MainActivity.PREF_CURRENT_TRACK_URL, null);
 
-            if (currentTrack.length() > 0) {
+            if ((currentTrack == null) || (currentTrack.length() == 0)) {
+                Toast.makeText(this, getString(R.string.share_no_tracks_played), Toast.LENGTH_SHORT).show();
 
+            } else  {
                 /*
                 * Use a shareIntent to expose the external Spotify URL for the current track.
                 */

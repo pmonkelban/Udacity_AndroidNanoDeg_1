@@ -3,16 +3,19 @@
     <CheckBoxPreference
         android:key="prefs_allow_explicit"
         android:title="@string/prefs_allow_explict_title"
-        android:summary="@string/prefs_allow_explicit_summary"
+        android:defaultValue="true" />
+
+    <CheckBoxPreference
+        android:key="prefs_show_on_lock"
+        android:title="@string/prefs_show_on_lock_title"
         android:defaultValue="true" />
 
     <EditTextPreference
         android:key="prefs_country_code"
         android:title="@string/prefs_country_code_title"
-        android:summary="@string/prefs_country_code_summary"
         android:defaultValue="@string/prefs_default_country_code"
         android:selectAllOnFocus="true"
-        android:inputType="textCapWords"
+        android:inputType="textCapCharacters"
         android:capitalize="characters"
         android:singleLine="true"
         android:maxLines="1"

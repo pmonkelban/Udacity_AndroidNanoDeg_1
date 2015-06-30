@@ -33,6 +33,7 @@
         </activity>
         <activity
             android:name=".activities.NowPlayingActivity"
+            android:parentActivityName=".activities.TrackListActivity"
             android:label="@string/now_playing"
             android:launchMode="singleTop"
             android:theme="@android:style/Theme.Dialog" />

@@ -26,6 +26,8 @@ public class SettingsActivity extends PreferenceActivity
     private static final Set<String> VALID_COUNTRY_CODES =
             new HashSet<>(Arrays.asList(Locale.getISOCountries()));
 
+    private String mLastValidCountryCode;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,6 +36,19 @@ public class SettingsActivity extends PreferenceActivity
 
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
+        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
+
+
+        /*
+        * Get the last valid country code from preferences, or set it to the default.
+        */
+        mLastValidCountryCode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .getString(MainActivity.PREF_COUNTRY_CODE, null);
+
+        if ((mLastValidCountryCode == null) ||
+                (!VALID_COUNTRY_CODES.contains(mLastValidCountryCode))) {
+            mLastValidCountryCode = getResources().getString(R.string.prefs_default_country_code);
+        }
 
     }
 
@@ -43,14 +58,12 @@ public class SettingsActivity extends PreferenceActivity
 
         if (preference instanceof EditTextPreference) {
             onPreferenceChange(preference,
-                    PreferenceManager
-                            .getDefaultSharedPreferences(preference.getContext())
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                             .getString(preference.getKey(), ""));
 
         } else if (preference instanceof CheckBoxPreference) {
             onPreferenceChange(preference,
-                    PreferenceManager
-                            .getDefaultSharedPreferences(preference.getContext())
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                             .getBoolean(preference.getKey(), true));
         }
     }
@@ -58,19 +71,33 @@ public class SettingsActivity extends PreferenceActivity
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
 
-        // Warn if we don't get a valid country code.
-        if (MainActivity.PREF_COUNTRY_CODE.equals(preference.getKey()))  {
+        // Warn if we don't get a valid country code.0
+        if (MainActivity.PREF_COUNTRY_CODE.equals(preference.getKey())) {
 
-            newValue = ((String) newValue).toUpperCase();
+            String newValueStr = ((String) newValue).toUpperCase();
 
-               if (!VALID_COUNTRY_CODES.contains(newValue))  {
-                   String msg = getString(R.string.invalid_country_code, newValue);
-                   Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-               }
+            if (!VALID_COUNTRY_CODES.contains(newValueStr)) {
+                String msg = getString(R.string.invalid_country_code, newValueStr);
+                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+
+               /*
+               * Reset country to last know good value.
+               */
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                        .edit()
+                        .putString(MainActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
+                        .commit();
+
+            } else {
+                mLastValidCountryCode = newValueStr;
+            }
+
+            preference.setSummary(mLastValidCountryCode);
+
+        } else {
+
+            preference.setSummary(newValue.toString());
         }
-
-        preference.setSummary(newValue.toString());
-
         /*
         * If Preferences change, our database cache is no longer valid.
         */

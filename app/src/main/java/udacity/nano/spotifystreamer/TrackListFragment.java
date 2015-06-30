@@ -21,10 +21,8 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.activities.NowPlayingActivity;
-import udacity.nano.spotifystreamer.activities.SettingsActivity;
 import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
 import udacity.nano.spotifystreamer.data.StreamerProvider;
-import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 
 public class TrackListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -62,7 +60,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
             Log.d(TAG, "onReceive() called");
 
             switch(intent.getAction())  {
-                case StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER:  {
+                case NowPlayingActivity.TRACK_CHANGE_BROADCAST_FILTER:  {
 
                     // When a track is finished, update the currently highlighted track.
                     mPosition =
@@ -72,12 +70,12 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
                     mTrackListView.smoothScrollToPosition(mPosition);
                     break;
                 }
-                case SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER:  {
-
-                    // When settings change, clear the track list.
-                    getLoaderManager().initLoader(TRACK_LOADER_ID, null, TrackListFragment.this);
-                    break;
-                }
+//                case SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER:  {
+//
+//                    // When settings change, clear the track list.
+//                    getLoaderManager().initLoader(TRACK_LOADER_ID, null, TrackListFragment.this);
+//                    break;
+//                }
                 default:
                     throw new IllegalArgumentException("Unexpected broadcast message received: " +
                             intent.getAction());
@@ -178,11 +176,11 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         }
 
 
-        // Register to receive Settings Changed broadcast notifications
-        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
-                mBroadcastReceiver,
-                new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER));
-
+//        // Register to receive Settings Changed broadcast notifications
+//        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
+//                mBroadcastReceiver,
+//                new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER));
+//
         return rootView;
 
     }

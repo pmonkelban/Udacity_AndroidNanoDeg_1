@@ -1,15 +1,20 @@
 package udacity.nano.spotifystreamer.activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.ArtistListFragment;
 import udacity.nano.spotifystreamer.R;
@@ -46,6 +51,41 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     */
     private static final Long SEARCH_REQUEST_WINDOW = 500L;  // one-half second
     private long mLastSearchTime;
+
+    private Uri mLastTrackListUri = null;
+
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive() called");
+
+            switch (intent.getAction()) {
+                case SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER: {
+
+                    // When settings change, clear the track list.
+                    if (mIsTwoPanel) {
+                        Bundle bundle = new Bundle();
+                        bundle.putParcelable(TrackListFragment.BUNDLE_KEY_ARTIST_ID, mLastTrackListUri);
+
+                        TrackListFragment fragment = new TrackListFragment();
+                        fragment.setArguments(bundle);
+
+                        getFragmentManager()
+                                .beginTransaction()
+                                .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
+                                .commit();
+                    }
+
+                    break;
+                }
+
+                default:
+                    throw new IllegalArgumentException("Unexpected broadcast message received: " +
+                            intent.getAction());
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,6 +181,10 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             }
         });
 
+        // Register to receive Settings Changed broadcast notifications
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(mBroadcastReceiver,
+                        new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER));
     }
 
     @Override
@@ -161,11 +205,15 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
         }
 
         if (id == R.id.action_share) {
+
+            // The Uri of the most recently played track is stored in preferences.
             SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             String currentTrack = settings.getString(PREF_CURRENT_TRACK, "");
 
-            if (currentTrack.length() > 0) {
+            if ((currentTrack == null) || (currentTrack.length() == 0)) {
+                Toast.makeText(this, getString(R.string.share_no_tracks_played), Toast.LENGTH_SHORT).show();
 
+            } else  {
                 /*
                 * Use a shareIntent to expose the external Spotify URL for the current track.
                 */
@@ -184,6 +232,9 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
 
     @Override
     public void onArtistSelected(Uri trackListUri) {
+
+        mLastTrackListUri = trackListUri;
+
         Log.d(TAG, "Artist selected. artistId:" + trackListUri);
 
         if (mIsTwoPanel) {
@@ -202,6 +253,11 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             intent.setData(trackListUri);
             startActivityForResult(intent, 1);
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState)  {
+        // do not call super.onSaveInstanceState
     }
 
 }

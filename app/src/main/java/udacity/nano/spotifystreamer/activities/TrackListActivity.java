@@ -1,18 +1,15 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.TrackListFragment;
-import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 /*
  * This activity is called when a user selects an artist.
@@ -51,7 +48,7 @@ public class TrackListActivity extends ActionBarActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+        getMenuInflater().inflate(R.menu.track_list, menu);
         return true;
     }
 
@@ -59,11 +56,6 @@ public class TrackListActivity extends ActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
-            return true;
-        }
 
         if (id == R.id.action_share) {
             SharedPreferences settings =

@@ -1,15 +1,18 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.TrackListFragment;
+import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 /*
  * This activity is called when a user selects an artist.

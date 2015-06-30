@@ -1,11 +1,13 @@
 package udacity.nano.spotifystreamer.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import java.util.Arrays;
@@ -18,6 +20,8 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
 
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener {
+
+    public static final String ON_SETTINGS_CHANGED_BROADCAST_FILTER = "settings-changed-broadcast-filter";
 
     private static final Set<String> VALID_COUNTRY_CODES =
             new HashSet<>(Arrays.asList(Locale.getISOCountries()));
@@ -75,6 +79,10 @@ public class SettingsActivity extends PreferenceActivity
                 null,
                 null
         );
+
+        // Notify other activities that that Settings have changed.
+        Intent intent = new Intent(ON_SETTINGS_CHANGED_BROADCAST_FILTER);
+        LocalBroadcastManager.getInstance(SettingsActivity.this).sendBroadcast(intent);
 
         return true;
     }

@@ -1,6 +1,7 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
@@ -21,12 +22,18 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener {
 
-    public static final String ON_SETTINGS_CHANGED_BROADCAST_FILTER = "settings-changed-broadcast-filter";
+    public static final String ON_SETTINGS_CHANGED_CACHE_INVALID =
+            "settings-changed-cache-invalid";
+
+    public static final String ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID =
+            "settings-changed-notifications-invalid";
 
     private static final Set<String> VALID_COUNTRY_CODES =
             new HashSet<>(Arrays.asList(Locale.getISOCountries()));
 
     private String mLastValidCountryCode;
+    private Boolean mLastExplicitValue;
+    private Boolean mLastOnLockValue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,15 +47,16 @@ public class SettingsActivity extends PreferenceActivity
 
 
         /*
-        * Get the last valid country code from preferences, or set it to the default.
+        * Get the most recent values for the preferences.
         */
-        mLastValidCountryCode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                .getString(MainActivity.PREF_COUNTRY_CODE, null);
+        SharedPreferences prefs =
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        if ((mLastValidCountryCode == null) ||
-                (!VALID_COUNTRY_CODES.contains(mLastValidCountryCode))) {
-            mLastValidCountryCode = getResources().getString(R.string.prefs_default_country_code);
-        }
+        mLastValidCountryCode = prefs.getString(MainActivity.PREF_COUNTRY_CODE,
+                getResources().getString(R.string.prefs_default_country_code));
+
+        mLastExplicitValue = prefs.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
+        mLastOnLockValue = prefs.getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
 
     }
 
@@ -71,46 +79,100 @@ public class SettingsActivity extends PreferenceActivity
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
 
-        // Warn if we don't get a valid country code.0
-        if (MainActivity.PREF_COUNTRY_CODE.equals(preference.getKey())) {
+        switch (preference.getKey()) {
+            case MainActivity.PREF_COUNTRY_CODE: {
+                handleCountryCodePrefChange(preference, (String) newValue);
+                break;
+            }
+            case MainActivity.PREF_ALLOW_EXPLICIT: {
+                handleExplicitPrefChange(preference, (boolean) newValue);
+                break;
+            }
+            case MainActivity.PREF_ALLOW_ON_LOCK: {
+                handleAllowOnLockPrefChange(preference, (boolean) newValue);
+                break;
+            }
+            default: // Do Nothing
+        }
 
-            String newValueStr = ((String) newValue).toUpperCase();
+        return true;
+    }
 
-            if (!VALID_COUNTRY_CODES.contains(newValueStr)) {
-                String msg = getString(R.string.invalid_country_code, newValueStr);
-                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+    private void handleCountryCodePrefChange(Preference preference, String newCountryCode) {
+
+        if (mLastValidCountryCode.equals(newCountryCode))  return;
+
+        // Check for a valid country code.
+        if (VALID_COUNTRY_CODES.contains(newCountryCode)) {
+            mLastValidCountryCode = newCountryCode;
+            flushDbCache();
+            notifyPrefsChange(ON_SETTINGS_CHANGED_CACHE_INVALID);
+
+        } else {
+            String msg = getString(R.string.invalid_country_code, newCountryCode);
+            Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
 
                /*
                * Reset country to last know good value.
                */
-                PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                        .edit()
-                        .putString(MainActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
-                        .commit();
-
-            } else {
-                mLastValidCountryCode = newValueStr;
-            }
-
-            preference.setSummary(mLastValidCountryCode);
-
-        } else {
-
-            preference.setSummary(newValue.toString());
+            PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                    .edit()
+                    .putString(MainActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
+                    .commit();
         }
+
+        preference.setSummary(mLastValidCountryCode);
+
+    }
+
+    private void handleExplicitPrefChange(Preference preference, Boolean newValue)  {
+
+        if (mLastExplicitValue.equals(newValue)) return;
+
+        mLastExplicitValue = newValue;
+        flushDbCache();
+        notifyPrefsChange(ON_SETTINGS_CHANGED_CACHE_INVALID);
+
+        preference.setSummary(newValue.toString());
+
+    }
+
+    private void handleAllowOnLockPrefChange(Preference preference, Boolean newValue)  {
+
+        if (mLastOnLockValue.equals(newValue)) return;
+
+        mLastOnLockValue = newValue;
+        notifyPrefsChange(ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID);
+
+        preference.setSummary(newValue.toString());
+
+    }
+
+
+
+
+    private void flushDbCache() {
+
         /*
         * If Preferences change, our database cache is no longer valid.
         */
-        getApplicationContext().getContentResolver().delete(
-                StreamerContract.BASE_CONTENT_URI,
-                null,
-                null
-        );
+        getApplicationContext()
+                .getContentResolver()
+                .delete(
+                        StreamerContract.BASE_CONTENT_URI,
+                        null,
+                        null
+                );
+
+    }
+
+    private void notifyPrefsChange(String pref) {
 
         // Notify other activities that that Settings have changed.
-        Intent intent = new Intent(ON_SETTINGS_CHANGED_BROADCAST_FILTER);
-        LocalBroadcastManager.getInstance(SettingsActivity.this).sendBroadcast(intent);
+        Intent intent = new Intent(pref);
 
-        return true;
+        LocalBroadcastManager.getInstance(SettingsActivity.this)
+                .sendBroadcast(intent);
     }
+
 }

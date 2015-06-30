@@ -164,7 +164,24 @@ public class NowPlayingActivity extends Activity
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            onNextClicked();
+            switch (intent.getAction())  {
+                case StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER:  {
+                    onNextClicked();
+                    break;
+                }
+                case SettingsActivity.ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID:  {
+                    NotificationManager notificationManager =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+                    notificationManager.cancel(NOTIFICATION_ID);
+
+                    issueNotification();
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("Unexpected broadcast message received: " +
+                            intent.getAction());
+            }
         }
     };
 
@@ -254,6 +271,11 @@ public class NowPlayingActivity extends Activity
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 mBroadcastReceiver,
                 new IntentFilter(StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER));
+
+        // Register to receive changes to the notification on lock screen setting
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mBroadcastReceiver,
+                new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID));
 
         loadTrackData();
 

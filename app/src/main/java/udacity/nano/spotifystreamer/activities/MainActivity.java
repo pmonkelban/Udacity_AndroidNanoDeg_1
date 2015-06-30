@@ -69,7 +69,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             Log.d(TAG, "onReceive() called");
 
             switch (intent.getAction()) {
-                case SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER: {
+                case SettingsActivity.ON_SETTINGS_CHANGED_CACHE_INVALID: {
 
                     // When settings change, clear the track list.
                     if (mIsTwoPanel) {
@@ -192,7 +192,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
         // Register to receive Settings Changed broadcast notifications
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(mBroadcastReceiver,
-                        new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_BROADCAST_FILTER));
+                        new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_CACHE_INVALID));
     }
 
     @Override

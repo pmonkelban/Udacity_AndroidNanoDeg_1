@@ -53,12 +53,12 @@ public class SettingsActivity extends PreferenceActivity
         mLastExplicitValue = prefs.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
         mLastOnLockValue = prefs.getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
 
+        mTrueString = getResources().getString(R.string.true_string);
+        mFalseString = getResources().getString(R.string.false_string);
+
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
-
-        mTrueString = getResources().getString(R.string.true_string);
-        mFalseString = getResources().getString(R.string.false_string);
 
     }
 

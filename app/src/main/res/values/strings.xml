@@ -45,5 +45,9 @@
     <string name="prefs_default_country_code">US</string>
     <string name="invalid_country_code">%1$s is not a recognized country code</string>
 
+    <string name="true_string">True</string>
+    <string name="false_string">False</string>
+
+
     <string name="share_no_tracks_played">No tracks have been played.</string>
 </resources>

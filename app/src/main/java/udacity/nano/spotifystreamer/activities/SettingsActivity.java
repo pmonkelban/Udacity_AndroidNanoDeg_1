@@ -1,6 +1,5 @@
 package udacity.nano.spotifystreamer.activities;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -8,7 +7,6 @@ import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 import java.util.Arrays;
@@ -17,7 +15,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import udacity.nano.spotifystreamer.R;
-import udacity.nano.spotifystreamer.data.StreamerContract;
 
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener {
@@ -34,6 +31,9 @@ public class SettingsActivity extends PreferenceActivity
     private String mLastValidCountryCode;
     private Boolean mLastExplicitValue;
     private Boolean mLastOnLockValue;
+
+    private String mTrueString;
+    private String mFalseString;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,12 +53,12 @@ public class SettingsActivity extends PreferenceActivity
         mLastExplicitValue = prefs.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
         mLastOnLockValue = prefs.getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
 
-
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
         bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
 
-
+        mTrueString = getResources().getString(R.string.true_string);
+        mFalseString = getResources().getString(R.string.false_string);
 
     }
 
@@ -76,6 +76,21 @@ public class SettingsActivity extends PreferenceActivity
                     PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                             .getBoolean(preference.getKey(), true));
         }
+
+        switch (preference.getKey())  {
+            case MainActivity.PREF_COUNTRY_CODE:
+                preference.setSummary(mLastValidCountryCode);
+                break;
+            case MainActivity.PREF_ALLOW_EXPLICIT:
+                preference.setSummary((mLastExplicitValue) ? mTrueString : mFalseString);
+                break;
+            case MainActivity.PREF_ALLOW_ON_LOCK:
+                preference.setSummary((mLastOnLockValue) ? mTrueString : mFalseString);
+                break;
+            default:
+                // Do Nothing
+        }
+
     }
 
     @Override
@@ -83,7 +98,8 @@ public class SettingsActivity extends PreferenceActivity
 
         switch (preference.getKey()) {
             case MainActivity.PREF_COUNTRY_CODE: {
-                handleCountryCodePrefChange(preference, (String) newValue);
+                String newCountryCode = ((String) newValue).toUpperCase().trim();
+                handleCountryCodePrefChange(preference, (String) newCountryCode);
                 break;
             }
             case MainActivity.PREF_ALLOW_EXPLICIT: {
@@ -107,8 +123,6 @@ public class SettingsActivity extends PreferenceActivity
         // Check for a valid country code.
         if (VALID_COUNTRY_CODES.contains(newCountryCode)) {
             mLastValidCountryCode = newCountryCode;
-            flushDbCache();
-            notifyPrefsChange(ON_SETTINGS_CHANGED_CACHE_INVALID);
 
         } else {
             String msg = getString(R.string.invalid_country_code, newCountryCode);
@@ -132,10 +146,8 @@ public class SettingsActivity extends PreferenceActivity
         if (mLastExplicitValue.equals(newValue)) return;
 
         mLastExplicitValue = newValue;
-        flushDbCache();
-        notifyPrefsChange(ON_SETTINGS_CHANGED_CACHE_INVALID);
 
-        preference.setSummary(newValue.toString());
+        preference.setSummary((newValue) ? mTrueString : mFalseString);
 
     }
 
@@ -144,37 +156,10 @@ public class SettingsActivity extends PreferenceActivity
         if (mLastOnLockValue.equals(newValue)) return;
 
         mLastOnLockValue = newValue;
-        notifyPrefsChange(ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID);
 
-        preference.setSummary(newValue.toString());
-
-    }
-
-
-
-
-    private void flushDbCache() {
-
-        /*
-        * If Preferences change, our database cache is no longer valid.
-        */
-        getApplicationContext()
-                .getContentResolver()
-                .delete(
-                        StreamerContract.BASE_CONTENT_URI,
-                        null,
-                        null
-                );
+        preference.setSummary((newValue) ? mTrueString : mFalseString);
 
     }
 
-    private void notifyPrefsChange(String pref) {
-
-        // Notify other activities that that Settings have changed.
-        Intent intent = new Intent(pref);
-
-        LocalBroadcastManager.getInstance(SettingsActivity.this)
-                .sendBroadcast(intent);
-    }
 
 }

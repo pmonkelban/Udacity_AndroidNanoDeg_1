@@ -1,14 +1,10 @@
 package udacity.nano.spotifystreamer.activities;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
@@ -46,6 +42,11 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
 
     private boolean mIsTwoPanel = false;
 
+    /*
+    * Request codes returned from Activities started with startActivityForResult()
+    */
+    private static final int TRACK_LIST_REQUEST_CODE = 1;
+    private static final int SETTINGS_ACTIVITY_REQUEST_CODE = 2;
 
     // The text field where the user enters their search.
     private SearchView mArtistSearchText;
@@ -61,39 +62,6 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     private long mLastSearchTime;
 
     private Uri mLastTrackListUri = null;
-
-    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive() called");
-
-            switch (intent.getAction()) {
-                case SettingsActivity.ON_SETTINGS_CHANGED_CACHE_INVALID: {
-
-                    // When settings change, clear the track list.
-                    if (mIsTwoPanel) {
-                        Bundle bundle = new Bundle();
-                        bundle.putParcelable(TrackListFragment.BUNDLE_KEY_ARTIST_ID, mLastTrackListUri);
-
-                        TrackListFragment fragment = new TrackListFragment();
-                        fragment.setArguments(bundle);
-
-                        getFragmentManager()
-                                .beginTransaction()
-                                .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
-                                .commit();
-                    }
-
-                    break;
-                }
-
-                default:
-                    throw new IllegalArgumentException("Unexpected broadcast message received: " +
-                            intent.getAction());
-            }
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -189,10 +157,6 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             }
         });
 
-        // Register to receive Settings Changed broadcast notifications
-        LocalBroadcastManager.getInstance(this)
-                .registerReceiver(mBroadcastReceiver,
-                        new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_CACHE_INVALID));
     }
 
     @Override
@@ -208,7 +172,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
+            startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY_REQUEST_CODE);
             return true;
         }
 
@@ -232,7 +196,8 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
                 * Use a shareIntent to expose the external Spotify URL for the current track.
                 */
 
-                String shareMsg = currentTrackUrl + NEWLINE + NEWLINE +
+                String shareMsg =
+                        currentTrackUrl + NEWLINE + NEWLINE +
                         "Artist: " + currentArtist + NEWLINE +
                         "Track: " + currentTrackName + NEWLINE +
                         "Album: " + currentAlbum;
@@ -268,23 +233,35 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
                     .beginTransaction()
                     .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
                     .commitAllowingStateLoss();
+
         } else {
             Intent intent = new Intent(this, TrackListActivity.class);
             intent.setData(trackListUri);
-            startActivityForResult(intent, 1);
+
+            /*
+            * We don't really need the result, but calling startActivity() allows the
+            * database cursor to close leading to an error when TrackListFragment attempts
+            * to update the selected track in its BroadcastReceiver.onReceive() method.
+            */
+            startActivityForResult(intent, TRACK_LIST_REQUEST_CODE);
         }
     }
 
-    /*
-    * Without this, the app throws an
-    * IllegalStateException: Can not perform this action after onSaveInstanceState
-    * See a related issue here:
-    * http://stackoverflow.com/questions/7575921/illegalstateexception-can-not-perform-this-action-after-onsaveinstancestate-h
-    * But even setting commitAllowingStateLoss() did not stop the error.
-    */
     @Override
-    public void onSaveInstanceState(Bundle outState)  {
-        // do not call super.onSaveInstanceState
+    public void onActivityResult(int requestCode, int resultCode, Intent data)  {
+
+        if (requestCode == SETTINGS_ACTIVITY_REQUEST_CODE) {
+
+            /*
+            * If we've just returned from the Settings Activity, then refresh
+            * the list of tracks.  The allow explicit content setting or country
+            * code may have changed, so we want to update the track list to
+            * reflect that.
+            */
+            onArtistSelected(mLastTrackListUri);
+        }
     }
+
+
 
 }

@@ -6,10 +6,16 @@ import android.provider.BaseColumns;
 
 public class StreamerContract {
 
+    /*
+    * Base for the URI clients will use to fetch data using the StremaerProvider Content Provider.
+    */
     public static final String CONTENT_AUTHORITY = "udacity.nano.spotifystreamer";
 
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
 
+    /*
+    * Tack these onto the BASE_CONTENT_URI to get either artist or track data.
+    */
     public static final String PATH_GET_ARTISTS = "getArtists";
     public static final String PATH_GET_TRACKS = "getTracks";
 
@@ -34,6 +40,7 @@ public class StreamerContract {
         public static final String COLUMN_NAME = "artist_name";
         public static final String COLUMN_ICON = "artist_icon";
         public static final String COLUMN_TRACKS_LAST_UPDATED = "tracksLastUpdated";
+        public static final String COLUMN_LAST_UPDATE_COUNTRY = "lastUpdateCountry";
 
     }
 

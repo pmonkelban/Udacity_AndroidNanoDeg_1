@@ -97,6 +97,57 @@ public class NowPlayingActivity extends Activity
     private int NOTIFICATION_ID = 27;  // Value doesn't matter
     private int NOTIFICATION_REQUEST_CODE = 42;  // Value doesn't matter
 
+
+    /*
+    * When the image is downloaded (using the Picasso library) and the
+    * onBitmapLoaded() method is called, this will create a Notification.
+    * If the download fails, a default Bitmap image will be used instead.
+    */
+    private class NotificationTarget implements Target {
+
+        final int iconId;
+        final String label;
+        final String actionStr;
+
+        NotificationTarget(int iconId, String label, String action) {
+            this.iconId = iconId;
+            this.label = label;
+            this.actionStr = action;
+        }
+
+        void createNotification(Bitmap bitmap) {
+
+            Notification.Action action = generateAction(
+                    iconId, label, actionStr, mTrackIds[mCurrentTrack], mArtistSpotifyId);
+
+            buildNotification(
+                    action,
+                    mTrackNames[mCurrentTrack],
+                    mArtistName + " - " + mAlbumNames[mCurrentTrack],
+                    mTrackIds[mCurrentTrack], mArtistSpotifyId, bitmap);
+
+        }
+
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+
+            Log.d(TAG, "Bitmap Loaded");
+            createNotification(bitmap);
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+            // Do Nothing
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+            createNotification(mNoImageAvailableBitmap);
+        }
+    }
+
+    private NotificationTarget mNotificationTarget;
+
     private ServiceConnection mStreamerServiceConnection = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -115,21 +166,24 @@ public class NowPlayingActivity extends Activity
 
             } else {
 
+                /*
+                * In case Play or Pause was clicked before the service was established.
+                */
                 if (mPlayOnServiceConnect) {
                     mPlayOnServiceConnect = false;
                     onPlayClicked();
-                }
 
-                if (mPauseOnServiceConnect) {
+                } else if (mPauseOnServiceConnect) {
                     mPauseOnServiceConnect = false;
                     onPauseClicked();
                 }
 
                 setIsPlaying(mStreamerService.isPlaying());
 
-                issueNotification();
-
             }
+
+            issueNotification();
+
 
             /*
             * Create a process to update the seek bar location every second.
@@ -167,15 +221,6 @@ public class NowPlayingActivity extends Activity
             switch (intent.getAction())  {
                 case StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER:  {
                     onNextClicked();
-                    break;
-                }
-                case SettingsActivity.ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID:  {
-                    NotificationManager notificationManager =
-                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-                    notificationManager.cancel(NOTIFICATION_ID);
-
-                    issueNotification();
                     break;
                 }
                 default:
@@ -241,6 +286,7 @@ public class NowPlayingActivity extends Activity
 
         Intent callingIntent = getIntent();
 
+        // TODO: Make these Strings constants.
         String operation = callingIntent.getStringExtra("operation");
 
         if ("prev".equals(operation)) {
@@ -261,7 +307,6 @@ public class NowPlayingActivity extends Activity
         mTrackSpotifyId = callingIntent.getStringExtra(EXTRA_KEY_TRACK_SPOTIFY_ID);
         mArtistSpotifyId = callingIntent.getStringExtra(EXTRA_KEY_ARTIST_SPOTIFY_ID);
 
-
         if ((mTrackSpotifyId == null) || (mArtistSpotifyId == null)) {
             throw new IllegalArgumentException("Must provide both the spotify track ID and " +
                     "spotify artist ID for the track you wish to play.");
@@ -272,13 +317,7 @@ public class NowPlayingActivity extends Activity
                 mBroadcastReceiver,
                 new IntentFilter(StreamerMediaService.ON_COMPLETE_BROADCAST_FILTER));
 
-        // Register to receive changes to the notification on lock screen setting
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                mBroadcastReceiver,
-                new IntentFilter(SettingsActivity.ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID));
-
         loadTrackData();
-
 
         // Start the StreamerMedia service.
         Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
@@ -287,7 +326,8 @@ public class NowPlayingActivity extends Activity
                 Context.BIND_AUTO_CREATE);
 
         // Load our default "No Image Available" icon into a Bitmap
-        mNoImageAvailableBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.image_not_available);
+        mNoImageAvailableBitmap = BitmapFactory.decodeResource(getResources(),
+                R.drawable.image_not_available);
 
     }
 
@@ -340,6 +380,7 @@ public class NowPlayingActivity extends Activity
                 trackListCursor.moveToNext();
                 i++;
             }
+
         } catch (Exception e) {
 
             /* We can get an exception if, for example, the database cursor comes back null.
@@ -410,7 +451,6 @@ public class NowPlayingActivity extends Activity
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.cancel(NOTIFICATION_ID);
-//        mStreamerService.stop();
 
         try {
             if (isStreamerServiceBound) {
@@ -421,6 +461,8 @@ public class NowPlayingActivity extends Activity
         }
 
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
+
+        Picasso.with(this).cancelRequest(mNotificationTarget);
 
         super.onDestroy();
     }
@@ -468,6 +510,8 @@ public class NowPlayingActivity extends Activity
                                    String artistAndAlbum, String trackId, String artistId,
                                    Bitmap albumImage) {
 
+        Log.d(TAG, "buildNotification() called");
+
         if (albumImage == null) {
             albumImage = mNoImageAvailableBitmap;
         }
@@ -478,7 +522,7 @@ public class NowPlayingActivity extends Activity
         intent.setAction(ACTION_NO_OP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                getApplicationContext(),
+                this,
                 NOTIFICATION_REQUEST_CODE,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
@@ -511,7 +555,16 @@ public class NowPlayingActivity extends Activity
         builder.addAction(generateAction(android.R.drawable.ic_media_next,
                 getResources().getString(R.string.next), ACTION_NEXT, trackId, artistId));
 
-        style.setShowActionsInCompactView(0, 1, 2);
+        /*
+        * I expected .setVisibility(visibility) to handle showing/hiding the playback controls
+        * on the lock screen.  That doesn't seem to do it though.  Here, if we chose not
+        * to display controls on the lock screen, we just don't add those buttons.
+        */
+        if (allowNotificationOnLockScreen) {
+            style.setShowActionsInCompactView(0, 1, 2);
+        } else  {
+            style.setShowActionsInCompactView();
+        }
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -519,51 +572,7 @@ public class NowPlayingActivity extends Activity
         notificationManager.notify(NOTIFICATION_ID, builder.build());
     }
 
-    /*
-    * When the image is downloaded (using the Picasso library) and the
-    * onBitmapLoaded() method is called, this will create a Notification.
-    * If the download fails, a default Bitmap image will be used instead.
-    */
-    private class NotificationTarget implements Target {
 
-        final int iconId;
-        final String label;
-        final String actionStr;
-
-        NotificationTarget(int iconId, String label, String action) {
-            this.iconId = iconId;
-            this.label = label;
-            this.actionStr = action;
-        }
-
-        void createNotification(Bitmap bitmap) {
-
-            Notification.Action action = generateAction(
-                    iconId, label, actionStr, mTrackIds[mCurrentTrack], mArtistSpotifyId);
-
-            buildNotification(
-                    action,
-                    mTrackNames[mCurrentTrack],
-                    mArtistName + " - " + mAlbumNames[mCurrentTrack],
-                    mTrackIds[mCurrentTrack], mArtistSpotifyId, bitmap);
-
-        }
-
-        @Override
-        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-            createNotification(bitmap);
-        }
-
-        @Override
-        public void onPrepareLoad(Drawable placeHolderDrawable) {
-            // Do Nothing
-        }
-
-        @Override
-        public void onBitmapFailed(Drawable errorDrawable) {
-            createNotification(mNoImageAvailableBitmap);
-        }
-    }
 
     @Override
     public void onPlayClicked() {
@@ -631,6 +640,8 @@ public class NowPlayingActivity extends Activity
 
     private void issueNotification() {
 
+        Log.d(TAG, "issueNotification() called");
+
         /*
         * Use our helper class, defined above, to load an image and then
         * create a Notification.
@@ -650,16 +661,15 @@ public class NowPlayingActivity extends Activity
             action = ACTION_PLAY;
         }
 
-        Target bitmapTarget = new NotificationTarget(iconId, label, action);
+        mNotificationTarget = new NotificationTarget(iconId, label, action);
+
+        Log.d(TAG, "Starting call to Picasso... " + mTrackImages[mCurrentTrack]);
 
         Picasso.with(this)
                 .load(mTrackImages[mCurrentTrack])
                 .placeholder(getResources().getDrawable(R.drawable.image_loading, null))
                 .error(getResources().getDrawable(R.drawable.image_not_available, null))
-                .into(bitmapTarget);
-
-//        setIsPlaying(false);
-
+                .into(mNotificationTarget);
     }
 
     @Override
@@ -711,4 +721,5 @@ public class NowPlayingActivity extends Activity
         LocalBroadcastManager.getInstance(NowPlayingActivity.this).sendBroadcast(intent);
 
     }
+
 }

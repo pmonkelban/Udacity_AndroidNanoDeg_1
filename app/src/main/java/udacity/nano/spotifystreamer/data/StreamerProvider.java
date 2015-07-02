@@ -33,35 +33,46 @@ import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
 
+    // Tag used when logging.
+    private static final String TAG = StreamerProvider.class.getCanonicalName();
+
     /*
     * These are tied to the the query sTracksByArtist in StreamerProvider.
     * If the attributes returned by that query changes, these values must be updated.
     */
+
+    public static final int IDX_ARTIST_ID = 0;
     public static final int IDX_ARTIST_SPOTIFY_ID = 1;
     public static final int IDX_ARTIST_NAME = 2;
     public static final int IDX_ARTIST_ICON = 3;
-    public static final int IDX_LAST_UPDATED = 4;
-    public static final int IDX_ID = 5;
-    public static final int IDX_ARTIST_ID = 6;
-    public static final int IDX_TRACK_SPOTIFY_ID = 7;
-    public static final int IDX_TRACK_NAME = 8;
-    public static final int IDX_ALBUM_NAME = 9;
-    public static final int IDX_DURATION = 10;
-    public static final int IDX_EXPLICIT = 11;
-    public static final int IDX_PLAYABLE = 12;
-    public static final int IDX_POPULARITY = 13;
-    public static final int IDX_PREVIEW_URL = 14;
-    public static final int IDX_TRACK_ICON = 15;
-    public static final int IDX_TRACK_IMAGE = 16;
-    private static final String TAG = StreamerProvider.class.getCanonicalName();
+    public static final int IDX_LAST_UPDATED_TIME = 4;
+    public static final int IDX_LAST_UPDATE_COUNTRY = 5;
+    public static final int IDX_TRACK_ID = 6;
+    public static final int IDX_TRACK_ARTIST_ID = 7;
+    public static final int IDX_TRACK_SPOTIFY_ID = 8;
+    public static final int IDX_TRACK_NAME = 9;
+    public static final int IDX_ALBUM_NAME = 10;
+    public static final int IDX_DURATION = 11;
+    public static final int IDX_EXPLICIT = 12;
+    public static final int IDX_PLAYABLE = 13;
+    public static final int IDX_POPULARITY = 14;
+    public static final int IDX_PREVIEW_URL = 15;
+    public static final int IDX_TRACK_ICON = 16;
+    public static final int IDX_TRACK_IMAGE = 17;
 
-    private static final UriMatcher sUriMatcher = buildUriMatcher();
+    /*
+    * Indicies for the columns returned when looking for a cached Query.
+    */
+    private static final int IDX_QUERY_ID = 0;
+
+    private static final UriMatcher sUriMatcher;
 
     private StreamerDbHelper mDbHelper;
 
     /*
     * Constants used by the matcher and query method to determine
     * what type of query to execute.
+    * These values are arbitrary.
     */
     static final int GET_ARTISTS = 100;
     static final int GET_TRACKS = 200;
@@ -77,21 +88,12 @@ public class StreamerProvider extends ContentProvider {
     private int idealImageWidth;
     private int idealImageHeight;
 
-    private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours ( * 0 -> fetch everything)
-//    private static final long MAX_CACHE_TIME = 1000 * 60; // 1 minute (for testing)
+    // Length of time, in seconds, before a cached item is considered stale.
+    private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours
 
-
-    // Used for reading and writing dates to and from the database.  Note all times are in UTC.
+    // Used for reading and writing dates to and from the database.  Note: all times are in UTC.
     private static final SimpleDateFormat dateFormatter =
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    private static final int COLUMN_QUERY_ID_IDX = 0;
-
-    /*
-    * Used to store the user's country.  We get this from their
-    * Default Local, and use it when using the Spotify API.
-     */
-    private Map<String, Object> mLocationMap = new HashMap<>();
 
     /*
     * When we perform a query and get a list of matching artists, we'll go ahead and pre-fetch
@@ -99,7 +101,7 @@ public class StreamerProvider extends ContentProvider {
     * by relevance, so it's likely that they'll match what the user was searching for.  By
     * pre-fetching those tracks, we can provide better performance.
     */
-    private static final int NUM_RESULTS_TO_PRE_FETCH_TRACKS = 2;
+    private static final int NUM_RESULTS_TO_PRE_FETCH_TRACKS = 5;
 
     static {
 
@@ -144,18 +146,18 @@ public class StreamerProvider extends ContentProvider {
                         " = " +
                         StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID
         );
-    }
 
+        /*
+        * Create the URI matches and add it's patterns.
+        */
 
-    static UriMatcher buildUriMatcher() {
+        sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-        final UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
-        final String authority = StreamerContract.CONTENT_AUTHORITY;
+        sUriMatcher.addURI(StreamerContract.CONTENT_AUTHORITY,
+                StreamerContract.PATH_GET_ARTISTS + "/*", GET_ARTISTS);
 
-        matcher.addURI(authority, StreamerContract.PATH_GET_ARTISTS + "/*", GET_ARTISTS);
-        matcher.addURI(authority, StreamerContract.PATH_GET_TRACKS + "/*", GET_TRACKS);
-
-        return matcher;
+        sUriMatcher.addURI(StreamerContract.CONTENT_AUTHORITY,
+                StreamerContract.PATH_GET_TRACKS + "/*", GET_TRACKS);
     }
 
     @Override
@@ -183,8 +185,7 @@ public class StreamerProvider extends ContentProvider {
 
         final SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
-        Date cacheCutOffTime = new Date();
-        cacheCutOffTime.setTime(System.currentTimeMillis() - MAX_CACHE_TIME);
+        Date cacheCutOffTime = new Date(System.currentTimeMillis() - MAX_CACHE_TIME);
 
         Cursor retCursor;
 
@@ -289,14 +290,14 @@ public class StreamerProvider extends ContentProvider {
                     /*
                     * Query Spotify for Matching Artists.
                     */
-                    ArtistsPager artistPager = mSpotifyService.searchArtists(query);
-                    pager = artistPager.artists;
+                    ArtistsPager artistsPager = mSpotifyService.searchArtists(query);
+                    pager = artistsPager.artists;
                     Log.d(TAG, "Successfully retrieved artists for query: " + query);
 
                     /*
                     * Delete ArtistQuery Entry.
                     */
-                    int queryId = checkForCachedQueryCursor.getInt(COLUMN_QUERY_ID_IDX);
+                    int queryId = checkForCachedQueryCursor.getInt(IDX_QUERY_ID);
 
                     db.delete(
                             StreamerContract.ArtistQuery.TABLE_NAME,
@@ -372,20 +373,26 @@ public class StreamerProvider extends ContentProvider {
         int n = 0;
 
         for (Artist artist : pager.items) {
-            long artistRecordId = createOrUpdateArtistRecord(db, artist);
+            long artistRecordId = createArtistRecord(db, artist);
 
             /*
-            * Create ArtistQuery Record.
+            * Create ArtistQuery Record.  This is a many-to-many join between
+            * Queries and Artists.
             */
             values = new ContentValues();
             values.put(StreamerContract.ArtistQuery.COLUMN_QUERY_ID, queryRecordId);
             values.put(StreamerContract.ArtistQuery.COLUMN_ARTIST_ID, artistRecordId);
+
             if (db.insert(StreamerContract.ArtistQuery.TABLE_NAME, null, values) < 0) {
+
                 throw new android.database.SQLException(
                         "Error creating query_artist record. queryRecordId:" + queryRecordId +
                                 " artistRecordId:" + artistRecordId);
             }
 
+            /*
+            * Fetch track data for the top n artists matching the query.
+            */
             if (n < NUM_RESULTS_TO_PRE_FETCH_TRACKS) {
                 getTracks(artistRecordId, artist.id, db, cacheCutOffTime);
                 n++;
@@ -409,8 +416,7 @@ public class StreamerProvider extends ContentProvider {
 
     }
 
-    private long createOrUpdateArtistRecord(SQLiteDatabase db, Artist artist) {
-        ContentValues values;
+    private long createArtistRecord(SQLiteDatabase db, Artist artist) {
 
         /*
         * Create / Update Artist data.
@@ -418,7 +424,7 @@ public class StreamerProvider extends ContentProvider {
         * has a unique constraint on the Artist table such that if a duplicate
         * spotify id is entered, the existing record will be replaced.
         */
-        values = new ContentValues();
+        ContentValues values = new ContentValues();
         values.put(StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID, artist.id);
         values.put(StreamerContract.ArtistEntry.COLUMN_NAME, artist.name);
 
@@ -453,46 +459,59 @@ public class StreamerProvider extends ContentProvider {
             /*
             * Delete ArtistQuery records where the related Query has expired.
             */
-            db.delete(
-                    StreamerContract.ArtistQuery.TABLE_NAME,
+
+            final String FLUSH_ARTIST_QUERY_WHERE_CLAUSE =
                     StreamerContract.ArtistQuery.COLUMN_QUERY_ID + " IN (SELECT " +
                             StreamerContract.QueryEntry._ID + " FROM " +
                             StreamerContract.QueryEntry.TABLE_NAME + " WHERE " +
-                            StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?)",
+                            StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?)";
+
+            db.delete(
+                    StreamerContract.ArtistQuery.TABLE_NAME,
+                    FLUSH_ARTIST_QUERY_WHERE_CLAUSE,
                     new String[]{cacheCutOffTimeStr}
             );
 
             /*
             * Delete Query records that have expired.
             */
+            final String FLUSH_QUERY_WHERE_CLAUSE =
+                    StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?";
+
             db.delete(
                     StreamerContract.QueryEntry.TABLE_NAME,
-                    StreamerContract.QueryEntry.COLUMN_CREATE_TIME + " < ?",
+                    FLUSH_QUERY_WHERE_CLAUSE,
                     new String[]{cacheCutOffTimeStr}
             );
 
             /*
             * Delete Tracks for all Artists that no longer have entries in ArtistQuery.
             */
-            db.delete(
-                    StreamerContract.TrackEntry.TABLE_NAME,
+            final String FLUSH_TRACKS_WHERE_CLAUSE =
                     StreamerContract.TrackEntry.COLUMN_ARTIST_ID + " IN (SELECT " +
                             StreamerContract.ArtistEntry._ID + " FROM " +
                             StreamerContract.ArtistEntry.TABLE_NAME + " WHERE " +
                             StreamerContract.ArtistEntry._ID + " NOT IN (SELECT " +
                             StreamerContract.ArtistQuery.COLUMN_ARTIST_ID + " FROM " +
-                            StreamerContract.ArtistQuery.TABLE_NAME + "))",
+                            StreamerContract.ArtistQuery.TABLE_NAME + "))";
+
+            db.delete(
+                    StreamerContract.TrackEntry.TABLE_NAME,
+                    FLUSH_TRACKS_WHERE_CLAUSE,
                     null
             );
 
             /*
             * Delete Artists that no longer have entries in ArtistQuery.
             */
-            db.delete(
-                    StreamerContract.ArtistEntry.TABLE_NAME,
+            final String FLUSH_ARTIST_WHERE_CLAUSE =
                     StreamerContract.ArtistEntry._ID + " NOT IN (SELECT " +
                             StreamerContract.ArtistQuery.COLUMN_ARTIST_ID + " FROM " +
-                            StreamerContract.ArtistQuery.TABLE_NAME + ")",
+                            StreamerContract.ArtistQuery.TABLE_NAME + ")";
+
+            db.delete(
+                    StreamerContract.ArtistEntry.TABLE_NAME,
+                    FLUSH_ARTIST_WHERE_CLAUSE,
                     null
             );
 
@@ -504,12 +523,12 @@ public class StreamerProvider extends ContentProvider {
         }
     }
 
-    private long lookupAndCreateArtist(String artistSpotifyId, SQLiteDatabase db) {
+    private long fetchAndCreateArtist(String artistSpotifyId, SQLiteDatabase db) {
 
         try {
             Artist artist = mSpotifyService.getArtist(artistSpotifyId);
-            Log.d(TAG, "Successfully retrieved artist artist: " + artistSpotifyId);
-            long id = createOrUpdateArtistRecord(db, artist);
+            Log.d(TAG, "Successfully retrieved artist: " + artistSpotifyId);
+            long id = createArtistRecord(db, artist);
             return id;
 
         } catch (Exception e) {
@@ -524,6 +543,8 @@ public class StreamerProvider extends ContentProvider {
     /*
     * Gets tracks for the given artist where the artist's spotify ID is the last
     * segment of the given Uri.
+    * This uses the artist's spotify ID to look up their record in the database
+    * so that getTracks(long, String, SQLiteDatabase, Date) can be used.
     */
     private Cursor getTracks(Uri uri, SQLiteDatabase db, Date cacheCutOffTime) {
 
@@ -537,7 +558,7 @@ public class StreamerProvider extends ContentProvider {
             artistLookupCursor = db.query(
                     StreamerContract.ArtistEntry.TABLE_NAME,
                     new String[]{StreamerContract.ArtistEntry._ID},
-                    StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID + " =?",
+                    StreamerContract.ArtistEntry.COLUMN_SPOTIFY_ID + " = ?",
                     new String[]{spotifyId},
                     null,
                     null,
@@ -545,8 +566,7 @@ public class StreamerProvider extends ContentProvider {
 
             /*
             * The artist record may be gone, so query Spotify and re-create it.
-            * This can happen if the preferences are change and the cache is flushed,
-            * then the user clicks on a already displayed artist.
+            * This can happen if the cache was very recently flushed.
             */
 
             if (artistLookupCursor.moveToFirst()) {
@@ -554,7 +574,7 @@ public class StreamerProvider extends ContentProvider {
                         artistLookupCursor.getColumnIndex(StreamerContract.ArtistEntry._ID));
 
             } else {
-                artistId = lookupAndCreateArtist(spotifyId, db);
+                artistId = fetchAndCreateArtist(spotifyId, db);
             }
 
         } finally {
@@ -574,22 +594,30 @@ public class StreamerProvider extends ContentProvider {
 
         Log.d(TAG, "getTracks() called. artistId:" + artistId);
 
-        // Get the user's country, and store it in a map.
+        // Get the user's country code, and store it in a map.
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
         String countryCode = settings.getString(MainActivity.PREF_COUNTRY_CODE, "US").toUpperCase();
-        mLocationMap.put(SpotifyService.COUNTRY, countryCode);
+
+        Map<String, Object> locationMap = new HashMap<>();
+        locationMap.put(SpotifyService.COUNTRY, countryCode);
 
         // Note if explicit tracks are allowed
         boolean allowExplicit = settings.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
 
         /*
-        * Get the Artists last tracks updated time.
+        * Get the Artists last tracks updated time.  Ensure that is was for our
+        * current country.
         */
+        final String ARTISTS_CACHE_WHERE_CLAUSE =
+                StreamerContract.ArtistEntry._ID + " = ?" +
+                        " AND " +
+                        StreamerContract.ArtistEntry.COLUMN_LAST_UPDATE_COUNTRY + " = ?";
+
         Cursor artistLastUpdateTimeCursor = db.query(
                 StreamerContract.ArtistEntry.TABLE_NAME,
                 new String[]{StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED},
-                StreamerContract.ArtistEntry._ID + " = ?",
-                new String[]{"" + artistId},
+                ARTISTS_CACHE_WHERE_CLAUSE,
+                new String[]{"" + artistId, countryCode},
                 null,
                 null,
                 null);
@@ -625,7 +653,7 @@ public class StreamerProvider extends ContentProvider {
                 /*
                 * Fetch Tracks from Spotify
                 */
-                Tracks result = mSpotifyService.getArtistTopTrack(artistSpotifyId, mLocationMap);
+                Tracks result = mSpotifyService.getArtistTopTrack(artistSpotifyId, locationMap);
                 if (result != null) topTracks = result.tracks;
                 Log.d(TAG, "Successfully retrieved top tracks for artist: " + artistSpotifyId);
 
@@ -651,7 +679,7 @@ public class StreamerProvider extends ContentProvider {
                     /*
                     * Fetch Tracks from Spotify
                     */
-                    Tracks result = mSpotifyService.getArtistTopTrack(artistSpotifyId, mLocationMap);
+                    Tracks result = mSpotifyService.getArtistTopTrack(artistSpotifyId, locationMap);
                     if (result != null) topTracks = result.tracks;
 
                     Log.d(TAG, "Successfully retrieved top tracks for artist: " + artistSpotifyId);
@@ -670,14 +698,18 @@ public class StreamerProvider extends ContentProvider {
                     /*
                     * Error, use Stale Data
                     */
-                    Log.e(TAG, "Failed to fetch to tracks for artist: " + artistSpotifyId + ", using Stale Data.");
+                    Log.e(TAG, "Failed to fetch to tracks for artist: " +
+                            artistSpotifyId + ", using Stale Data.");
+
                     Log.e(TAG, "Error: " + e.getMessage());
+
+                    String whereClause = generateTracksByArtistWhereClause(allowExplicit);
 
                     return sTracksByArtist.query(
                             db,
                             null,
-                            StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + " = ?",
-                            new String[]{"" + artistId},
+                            whereClause,
+                            new String[]{"" + artistId, countryCode},
                             null,
                             null,
                             null);
@@ -688,11 +720,14 @@ public class StreamerProvider extends ContentProvider {
                 /*
                 * Return cached list of tracks.
                 */
+
+                String whereClause = generateTracksByArtistWhereClause(allowExplicit);
+
                 return sTracksByArtist.query(
                         db,
                         null,
-                        StreamerContract.ArtistEntry.TABLE_NAME + "." + StreamerContract.ArtistEntry._ID + " = ?",
-                        new String[]{"" + artistId},
+                        whereClause,
+                        new String[]{"" + artistId, countryCode},
                         null,
                         null,
                         null);
@@ -703,39 +738,37 @@ public class StreamerProvider extends ContentProvider {
 
         for (Track track : topTracks) {
 
-            if (allowExplicit || !track.explicit) {
-
              /*
             * Create Track data.
             */
-                ContentValues values = new ContentValues();
-                values.put(StreamerContract.TrackEntry.COLUMN_SPOTIFY_ID, track.id);
-                values.put(StreamerContract.TrackEntry.COLUMN_ARTIST_ID, artistId);
-                values.put(StreamerContract.TrackEntry.COLUMN_TITLE, track.name);
-                values.put(StreamerContract.TrackEntry.COLUMN_ALBUM, track.album.name);
-                values.put(StreamerContract.TrackEntry.COLUMN_DURATION, track.duration_ms);
-                values.put(StreamerContract.TrackEntry.COLUMN_EXPLICIT, track.explicit);
+            ContentValues values = new ContentValues();
+            values.put(StreamerContract.TrackEntry.COLUMN_SPOTIFY_ID, track.id);
+            values.put(StreamerContract.TrackEntry.COLUMN_ARTIST_ID, artistId);
+            values.put(StreamerContract.TrackEntry.COLUMN_TITLE, track.name);
+            values.put(StreamerContract.TrackEntry.COLUMN_ALBUM, track.album.name);
+            values.put(StreamerContract.TrackEntry.COLUMN_DURATION, track.duration_ms);
+            values.put(StreamerContract.TrackEntry.COLUMN_EXPLICIT, track.explicit);
 
-                // Sometimes is_playable is null.  In this case, I've found that it is playable.
-                values.put(StreamerContract.TrackEntry.COLUMN_PLAYABLE,
-                        ((track.is_playable == null) || (track.is_playable)));
+            // Sometimes is_playable is null.  In this case, I've found that it is playable.
+            values.put(StreamerContract.TrackEntry.COLUMN_PLAYABLE,
+                    ((track.is_playable == null) || (track.is_playable)));
 
-                values.put(StreamerContract.TrackEntry.COLUMN_POPULARITY, track.popularity);
-                values.put(StreamerContract.TrackEntry.COLUMN_PREVIEW, track.preview_url);
+            values.put(StreamerContract.TrackEntry.COLUMN_POPULARITY, track.popularity);
+            values.put(StreamerContract.TrackEntry.COLUMN_PREVIEW, track.preview_url);
 
-                Image i = ImageUtils.getClosestImageSize(track.album.images, idealIconWidth,
-                        idealIconHeight);
+            Image i = ImageUtils.getClosestImageSize(track.album.images, idealIconWidth,
+                    idealIconHeight);
 
-                values.put(StreamerContract.TrackEntry.COLUMN_ICON, (i == null) ? null : i.url);
+            values.put(StreamerContract.TrackEntry.COLUMN_ICON, (i == null) ? null : i.url);
 
-                i = ImageUtils.getClosestImageSize(track.album.images, idealImageWidth, idealImageHeight);
+            i = ImageUtils.getClosestImageSize(track.album.images, idealImageWidth, idealImageHeight);
 
-                values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
+            values.put(StreamerContract.TrackEntry.COLUMN_IMAGE, (i == null) ? null : i.url);
 
-                if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0) {
-                    throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
-                }
+            if (db.insert(StreamerContract.TrackEntry.TABLE_NAME, null, values) < 0) {
+                throw new android.database.SQLException("Error creating track record.  trackId:" + track.id);
             }
+
         }
 
         /*
@@ -743,6 +776,7 @@ public class StreamerProvider extends ContentProvider {
         */
         ContentValues values = new ContentValues();
         values.put(StreamerContract.ArtistEntry.COLUMN_TRACKS_LAST_UPDATED, dateFormatter.format(new Date()));
+        values.put(StreamerContract.ArtistEntry.COLUMN_LAST_UPDATE_COUNTRY, countryCode);
 
         db.update(
                 StreamerContract.ArtistEntry.TABLE_NAME,
@@ -767,6 +801,26 @@ public class StreamerProvider extends ContentProvider {
                 null,
                 null,
                 null);
+
+    }
+
+    private String generateTracksByArtistWhereClause(boolean allowExplicit) {
+
+        final String TRACKS_BY_ARTIST_WHERE_CLAUSE =
+                StreamerContract.ArtistEntry.TABLE_NAME + "." +
+                        StreamerContract.ArtistEntry._ID + " = ?" +
+                        " AND " +
+                        StreamerContract.ArtistEntry.TABLE_NAME + "." +
+                        StreamerContract.ArtistEntry.COLUMN_LAST_UPDATE_COUNTRY + " = ?";
+
+        final String TRACK_BY_ARTIST_NO_EXPLICIT_WHERE_CLAUSE =
+                TRACKS_BY_ARTIST_WHERE_CLAUSE +
+                        " AND " +
+                        StreamerContract.TrackEntry.TABLE_NAME + "." +
+                        StreamerContract.TrackEntry.COLUMN_EXPLICIT + " = 0";
+
+        return (allowExplicit) ? TRACKS_BY_ARTIST_WHERE_CLAUSE :
+                TRACK_BY_ARTIST_NO_EXPLICIT_WHERE_CLAUSE;
 
     }
 

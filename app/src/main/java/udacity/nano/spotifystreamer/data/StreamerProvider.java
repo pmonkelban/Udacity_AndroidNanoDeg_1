@@ -28,7 +28,7 @@ import kaaes.spotify.webapi.android.models.Pager;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import udacity.nano.spotifystreamer.R;
-import udacity.nano.spotifystreamer.activities.MainActivity;
+import udacity.nano.spotifystreamer.activities.SpotifyStreamerActivity;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
 public class StreamerProvider extends ContentProvider {
@@ -596,13 +596,13 @@ public class StreamerProvider extends ContentProvider {
 
         // Get the user's country code, and store it in a map.
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
-        String countryCode = settings.getString(MainActivity.PREF_COUNTRY_CODE, "US").toUpperCase();
+        String countryCode = settings.getString(SpotifyStreamerActivity.PREF_COUNTRY_CODE, "US").toUpperCase();
 
         Map<String, Object> locationMap = new HashMap<>();
         locationMap.put(SpotifyService.COUNTRY, countryCode);
 
         // Note if explicit tracks are allowed
-        boolean allowExplicit = settings.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
+        boolean allowExplicit = settings.getBoolean(SpotifyStreamerActivity.PREF_ALLOW_EXPLICIT, true);
 
         /*
         * Get the Artists last tracks updated time.  Ensure that is was for our

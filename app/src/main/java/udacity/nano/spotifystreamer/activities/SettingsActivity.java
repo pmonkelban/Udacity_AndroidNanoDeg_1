@@ -47,18 +47,18 @@ public class SettingsActivity extends PreferenceActivity
         SharedPreferences prefs =
                 PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        mLastValidCountryCode = prefs.getString(MainActivity.PREF_COUNTRY_CODE,
+        mLastValidCountryCode = prefs.getString(SpotifyStreamerActivity.PREF_COUNTRY_CODE,
                 getResources().getString(R.string.prefs_default_country_code));
 
-        mLastExplicitValue = prefs.getBoolean(MainActivity.PREF_ALLOW_EXPLICIT, true);
-        mLastOnLockValue = prefs.getBoolean(MainActivity.PREF_ALLOW_ON_LOCK, true);
+        mLastExplicitValue = prefs.getBoolean(SpotifyStreamerActivity.PREF_ALLOW_EXPLICIT, true);
+        mLastOnLockValue = prefs.getBoolean(SpotifyStreamerActivity.PREF_ALLOW_ON_LOCK, true);
 
         mTrueString = getResources().getString(R.string.true_string);
         mFalseString = getResources().getString(R.string.false_string);
 
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_COUNTRY_CODE));
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_EXPLICIT));
-        bindPreferenceSummaryToValue(findPreference(MainActivity.PREF_ALLOW_ON_LOCK));
+        bindPreferenceSummaryToValue(findPreference(SpotifyStreamerActivity.PREF_COUNTRY_CODE));
+        bindPreferenceSummaryToValue(findPreference(SpotifyStreamerActivity.PREF_ALLOW_EXPLICIT));
+        bindPreferenceSummaryToValue(findPreference(SpotifyStreamerActivity.PREF_ALLOW_ON_LOCK));
 
     }
 
@@ -78,13 +78,13 @@ public class SettingsActivity extends PreferenceActivity
         }
 
         switch (preference.getKey())  {
-            case MainActivity.PREF_COUNTRY_CODE:
+            case SpotifyStreamerActivity.PREF_COUNTRY_CODE:
                 preference.setSummary(mLastValidCountryCode);
                 break;
-            case MainActivity.PREF_ALLOW_EXPLICIT:
+            case SpotifyStreamerActivity.PREF_ALLOW_EXPLICIT:
                 preference.setSummary((mLastExplicitValue) ? mTrueString : mFalseString);
                 break;
-            case MainActivity.PREF_ALLOW_ON_LOCK:
+            case SpotifyStreamerActivity.PREF_ALLOW_ON_LOCK:
                 preference.setSummary((mLastOnLockValue) ? mTrueString : mFalseString);
                 break;
             default:
@@ -97,16 +97,16 @@ public class SettingsActivity extends PreferenceActivity
     public boolean onPreferenceChange(Preference preference, Object newValue) {
 
         switch (preference.getKey()) {
-            case MainActivity.PREF_COUNTRY_CODE: {
+            case SpotifyStreamerActivity.PREF_COUNTRY_CODE: {
                 String newCountryCode = ((String) newValue).toUpperCase().trim();
                 handleCountryCodePrefChange(preference, (String) newCountryCode);
                 break;
             }
-            case MainActivity.PREF_ALLOW_EXPLICIT: {
+            case SpotifyStreamerActivity.PREF_ALLOW_EXPLICIT: {
                 handleExplicitPrefChange(preference, (boolean) newValue);
                 break;
             }
-            case MainActivity.PREF_ALLOW_ON_LOCK: {
+            case SpotifyStreamerActivity.PREF_ALLOW_ON_LOCK: {
                 handleAllowOnLockPrefChange(preference, (boolean) newValue);
                 break;
             }
@@ -133,7 +133,7 @@ public class SettingsActivity extends PreferenceActivity
                */
             PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                     .edit()
-                    .putString(MainActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
+                    .putString(SpotifyStreamerActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
                     .commit();
         }
 

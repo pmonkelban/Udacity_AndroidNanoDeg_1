@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg3008"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   width="430"
+   height="96"
+   sodipodi:docname="ic_logo.png">
+  <metadata
+     id="metadata3014">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3012" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1086"
+     inkscape:window-height="778"
+     id="namedview3010"
+     showgrid="false"
+     height="96px"
+     inkscape:zoom="1.3581395"
+     inkscape:cx="103.08219"
+     inkscape:cy="24"
+     inkscape:window-x="2357"
+     inkscape:window-y="209"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg3008" />
+  <g
+     id="g3032"
+     transform="translate(90.565068,83.202055)"
+     inkscape:export-filename="/home/patrick/Projects/Udacity/NanoDegree/SpotifyStreamer/app/src/main/res/drawable/ic_logo.png"
+     inkscape:export-xdpi="86.400002"
+     inkscape:export-ydpi="86.400002">
+    <path
+       transform="matrix(1.3900957,0,0,1.2843277,-103.87089,-89.79989)"
+       d="m 72.157536,39.164383 c 0,18.705808 -14.010268,33.869862 -31.292809,33.869862 -17.282541,0 -31.2928085,-15.164054 -31.2928085,-33.869862 0,-18.705808 14.0102675,-33.8698617 31.2928085,-33.8698617 17.282541,0 31.292809,15.1640537 31.292809,33.8698617 z"
+       sodipodi:ry="33.869862"
+       sodipodi:rx="31.292809"
+       sodipodi:cy="39.164383"
+       sodipodi:cx="40.864727"
+       id="path3018"
+       style="fill:#2dbd59;fill-opacity:1;stroke-linejoin:round"
+       sodipodi:type="arc" />
+    <flowRoot
+       transform="translate(-25.561644,39.90068)"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#2dbd59;fill-opacity:1;stroke:none;font-family:Sans"
+       id="flowRoot3020"
+       xml:space="preserve"><flowRegion
+         id="flowRegion3022"><rect
+           style="fill:#2dbd59;fill-opacity:1"
+           y="-105.88699"
+           x="-67.739723"
+           height="48.59589"
+           width="371.09589"
+           id="rect3024" /></flowRegion><flowPara
+         id="flowPara3026"><flowSpan
+   id="flowSpan3028"
+   style="fill:#ffffff;fill-opacity:1">Spot</flowSpan>ify Streamer</flowPara></flowRoot>  </g>
+</svg>

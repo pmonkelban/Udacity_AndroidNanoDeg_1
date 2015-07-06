@@ -40,6 +40,7 @@ public class NowPlayingFragment extends DialogFragment {
     private ImageView mImageViewTrackImage;
 
     private SeekBar mSeekBar;
+    private TextView mSeekBarDurationLabel;
 
     private int mImageWidth;
     private int mImageHeight;
@@ -85,8 +86,29 @@ public class NowPlayingFragment extends DialogFragment {
         }
     }
 
+    /*
+    * Takes a number of miliSeconds and formats it as M:S.
+    * Seconds will always be 2 digits.
+    */
+    private static String formatDurationLabel(int miliSeconds)  {
+
+        int seconds = miliSeconds / 1000;
+
+        int mins = seconds / 60;
+        int secs = seconds % 60;
+
+        String mStr = "" + mins;
+        String sStr = "" + secs;
+
+        if (sStr.length() < 2) sStr = "0" + sStr;
+
+        return mStr + ":" + sStr;
+    }
+
     public void setTrackDuration(int duration)  {
         if (mSeekBar != null)  mSeekBar.setMax(duration);
+        if (mSeekBarDurationLabel != null) mSeekBarDurationLabel.setText(formatDurationLabel(duration));
+
     }
 
     public void setSeekBarLocation(int location)  {
@@ -106,7 +128,6 @@ public class NowPlayingFragment extends DialogFragment {
             }
         }
     }
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -134,6 +155,8 @@ public class NowPlayingFragment extends DialogFragment {
         mTextViewTrackName = (TextView) rootView.findViewById(R.id.track_name);
         mTextViewAlbumName = (TextView) rootView.findViewById(R.id.album_name);
         mImageViewTrackImage = (ImageView) rootView.findViewById(R.id.track_image);
+
+        mSeekBarDurationLabel = (TextView) rootView.findViewById(R.id.seek_bar_end_label);
 
         mSeekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
 

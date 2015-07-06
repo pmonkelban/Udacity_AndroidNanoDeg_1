@@ -7,7 +7,7 @@
     </style>
 
     <!-- Main activity theme. -->
-    <style name="SpotifyStreamer" parent="AppTheme">
+    <style name="SpotifyStreamerTheme" parent="AppTheme">
         <item name="actionBarStyle">@style/ActionBar.Solid.SpotifyStreamer.NoTitle</item>
     </style>
 

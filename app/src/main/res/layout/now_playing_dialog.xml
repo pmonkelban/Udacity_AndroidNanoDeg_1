@@ -4,118 +4,133 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/track_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:maxHeight="@dimen/track_image_display_width"
-        android:maxWidth="@dimen/track_image_display_width"
-        android:minHeight="@dimen/track_image_display_width"
-        android:minWidth="@dimen/track_image_display_width"/>
+    <!--<ImageView-->
+        <!--android:id="@+id/track_image"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="center_horizontal"-->
+        <!--android:maxHeight="@dimen/track_image_display_width"-->
+        <!--android:maxWidth="@dimen/track_image_display_width"-->
+        <!--android:minHeight="@dimen/track_image_display_width"-->
+        <!--android:minWidth="@dimen/track_image_display_width" />-->
 
-    <!--
-        android:maxHeight="@dimen/track_image_height"
-        android:maxWidth="@dimen/track_image_width"
-        android:minHeight="@dimen/track_image_height"
-        android:minWidth="@dimen/track_image_width"
-    -->
+    <!--<TableLayout-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content">-->
 
-    <TableLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        <!--<TableRow>-->
 
-        <TableRow>
+            <!--<TextView-->
+                <!--android:layout_column="1"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:text="@string/artist_label" />-->
 
-            <TextView
-                android:layout_column="1"
-                android:padding="3dp"
-                android:gravity="start"
-                android:text="@string/artist_label" />
+            <!--<TextView-->
+                <!--android:id="@+id/artist"-->
+                <!--android:layout_column="2"-->
+                <!--android:ellipsize="end"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:singleLine="true" />-->
+        <!--</TableRow>-->
 
-            <TextView
-                android:id="@+id/artist"
-                android:layout_column="2"
-                android:ellipsize="end"
-                android:gravity="start"
-                android:padding="3dp"
-                android:singleLine="true" />
-        </TableRow>
+        <!--<TableRow>-->
 
-        <TableRow>
+            <!--<TextView-->
+                <!--android:layout_column="1"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:text="@string/track_label" />-->
 
-            <TextView
-                android:layout_column="1"
-                android:padding="3dp"
-                android:gravity="start"
-                android:text="@string/track_label" />
+            <!--<TextView-->
+                <!--android:id="@+id/track_name"-->
+                <!--android:layout_column="2"-->
+                <!--android:ellipsize="end"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:singleLine="true" />-->
 
-            <TextView
-                android:id="@+id/track_name"
-                android:layout_column="2"
-                android:ellipsize="end"
-                android:gravity="start"
-                android:padding="3dp"
-                android:singleLine="true" />
+        <!--</TableRow>-->
 
-        </TableRow>
+        <!--<TableRow>-->
 
-        <TableRow>
+            <!--<TextView-->
+                <!--android:layout_column="1"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:text="@string/album_label" />-->
 
-            <TextView
-                android:layout_column="1"
-                android:padding="3dp"
-                android:gravity="start"
-                android:text="@string/album_label" />
+            <!--<TextView-->
+                <!--android:id="@+id/album_name"-->
+                <!--android:layout_column="2"-->
+                <!--android:ellipsize="end"-->
+                <!--android:gravity="start"-->
+                <!--android:padding="3dp"-->
+                <!--android:singleLine="true" />-->
+        <!--</TableRow>-->
 
-            <TextView
-                android:id="@+id/album_name"
-                android:layout_column="2"
-                android:ellipsize="end"
-                android:gravity="start"
-                android:padding="3dp"
-                android:singleLine="true" />
-        </TableRow>
+    <!--</TableLayout>-->
 
-    </TableLayout>
+    <!--<LinearLayout-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:orientation="horizontal">-->
 
-    <SeekBar
-        android:id="@+id/seek_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="30000" />
+        <!--<TextView-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="center_vertical"-->
+            <!--android:text="0:00" />-->
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="center_horizontal"
-        android:orientation="horizontal">
+        <!--<SeekBar-->
+            <!--android:id="@+id/seek_bar"-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:max="30000"-->
+            <!--android:layout_weight="1"-->
+            <!--android:padding="5dp" />-->
 
-        <ImageButton
-            android:id="@+id/button_prev"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_previous" />
+        <!--<TextView-->
+            <!--android:id="@+id/seek_bar_end_label"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="center_vertical"-->
+            <!--android:text="0:00" />-->
 
-        <ImageButton
-            android:id="@+id/button_play"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_play"
-            android:visibility="gone" />
+    <!--</LinearLayout>-->
 
-        <ImageButton
-            android:id="@+id/button_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_pause" />
+    <!--<LinearLayout-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_gravity="center_horizontal"-->
+        <!--android:orientation="horizontal">-->
 
-        <ImageButton
-            android:id="@+id/button_next"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_next" />
+        <!--<ImageButton-->
+            <!--android:id="@+id/button_prev"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:src="@android:drawable/ic_media_previous" />-->
 
-    </LinearLayout>
+        <!--<ImageButton-->
+            <!--android:id="@+id/button_play"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:src="@android:drawable/ic_media_play"-->
+            <!--android:visibility="gone" />-->
+
+        <!--<ImageButton-->
+            <!--android:id="@+id/button_pause"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:src="@android:drawable/ic_media_pause" />-->
+
+        <!--<ImageButton-->
+            <!--android:id="@+id/button_next"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:src="@android:drawable/ic_media_next" />-->
+
+    <!--</LinearLayout>-->
 
 </LinearLayout>

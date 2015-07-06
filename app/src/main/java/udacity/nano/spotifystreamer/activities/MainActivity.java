@@ -1,16 +1,14 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.ArtistListFragment;
 import udacity.nano.spotifystreamer.R;
@@ -21,24 +19,7 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
  * The app's main activity.
  * Kicks off ArtistListFragment
  */
-public class MainActivity extends ActionBarActivity implements ArtistListFragment.Callback {
-
-    private final String TAG = getClass().getCanonicalName();
-
-    static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
-    static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
-
-    // Used to format the currently playing track when shared.
-    private final String NEWLINE = System.getProperty("line.separator");
-
-    public static final String PREF_CURRENT_TRACK_NAME = "prefs_current_track_name";
-    public static final String PREF_CURRENT_ALBUM = "prefs_current_album";
-    public static final String PREF_CURRENT_ARTIST = "prefs_current_artist";
-    public static final String PREF_CURRENT_TRACK_URL = "prefs_current_track_url";
-
-    public static final String PREF_COUNTRY_CODE = "prefs_country_code";
-    public static final String PREF_ALLOW_EXPLICIT = "prefs_allow_explicit";
-    public static final String PREF_ALLOW_ON_LOCK = "prefs_show_on_lock";
+public class MainActivity extends SpotifyStreamerActivity implements ArtistListFragment.Callback {
 
     private boolean mIsTwoPanel = false;
 
@@ -47,6 +28,8 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     */
     private static final int TRACK_LIST_REQUEST_CODE = 1;
     private static final int SETTINGS_ACTIVITY_REQUEST_CODE = 2;
+
+    private ShareActionProvider mShareActionProvider;
 
     // The text field where the user enters their search.
     private SearchView mArtistSearchText;
@@ -161,54 +144,36 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+
         getMenuInflater().inflate(R.menu.main, menu);
+
+        MenuItem menuItem = menu.findItem(R.id.action_share);
+
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
+
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        int id = item.getItemId();
+        switch (item.getItemId()) {
 
-        if (id == R.id.action_settings) {
-            startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY_REQUEST_CODE);
-            return true;
-        }
+            case R.id.action_settings:
+                startActivityForResult(new Intent(this, SettingsActivity.class),
+                        SETTINGS_ACTIVITY_REQUEST_CODE);
+                break;
 
-        if (id == R.id.action_share) {
+//            case R.id.action_share:
+//                handleShareAction();
+//                break;
 
-            // The Uri of the most recently played track is stored in preferences.
-            SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            String currentTrackUrl = settings.getString(PREF_CURRENT_TRACK_URL, null);
+            case R.id.action_now_playing:
+                handleNowPlayingAction();
+                break;
 
-
-            if ((currentTrackUrl == null) || (currentTrackUrl.length() == 0)) {
-                Toast.makeText(this, getString(R.string.share_no_tracks_played), Toast.LENGTH_SHORT).show();
-
-            } else  {
-
-                String currentArtist = settings.getString(PREF_CURRENT_ARTIST, "");
-                String currentAlbum = settings.getString(PREF_CURRENT_ALBUM, "");
-                String currentTrackName = settings.getString(PREF_CURRENT_TRACK_NAME, "");
-
-                /*
-                * Use a shareIntent to expose the external Spotify URL for the current track.
-                */
-
-                String shareMsg =
-                        currentTrackUrl + NEWLINE + NEWLINE +
-                        "Artist: " + currentArtist + NEWLINE +
-                        "Track: " + currentTrackName + NEWLINE +
-                        "Album: " + currentAlbum;
-
-                Intent sendIntent = new Intent();
-                sendIntent.setAction(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_TEXT, shareMsg);
-                sendIntent.setType("text/plain");
-                startActivity(sendIntent);
-
-            }
+            default:
+                throw new IllegalArgumentException("Unknown menu item. id=" + item.getItemId());
 
         }
 
@@ -248,7 +213,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data)  {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if (requestCode == SETTINGS_ACTIVITY_REQUEST_CODE) {
 
@@ -261,7 +226,6 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             onArtistSelected(mLastTrackListUri);
         }
     }
-
 
 
 }

@@ -1,9 +1,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+
+    <item android:id="@+id/action_now_playing"
+        android:orderInCategory="100"
+        android:icon="@drawable/now_playing"
+        android:title="@string/now_playing"
+        app:showAsAction="always" />
+
     <item android:id="@+id/action_share"
-        android:title="@string/action_share"
         android:orderInCategory="200"
-        app:showAsAction="never" />
+        android:title="@string/action_share"
+        app:showAsAction="always"
+        app:actionProviderClass="android.support.v7.widget.ShareActionProvider" />
 
 </menu>

@@ -70,12 +70,12 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
         String currentArtist = settings.getString(PREF_CURRENT_ARTIST_SPOTIFY_ID, "");
         String currentTrack = settings.getString(PREF_CURRENT_TRACK_SPOTIFY_ID, "");
 
-        Intent intent = new Intent(this, NowPlayingActivity.class);
-        intent.putExtra(NowPlayingActivity.EXTRA_KEY_ARTIST_SPOTIFY_ID, currentArtist);
-        intent.putExtra(NowPlayingActivity.EXTRA_KEY_TRACK_SPOTIFY_ID, currentTrack);
-        intent.putExtra(NowPlayingActivity.EXTRA_KEY_RESET_ON_STARTUP, false);
-
-        startActivity(intent);
+//        Intent intent = new Intent(this, NowPlayingActivity.class);
+//        intent.putExtra(NowPlayingActivity.EXTRA_KEY_ARTIST_SPOTIFY_ID, currentArtist);
+//        intent.putExtra(NowPlayingActivity.EXTRA_KEY_TRACK_SPOTIFY_ID, currentTrack);
+//        intent.putExtra(NowPlayingActivity.EXTRA_KEY_RESET_ON_STARTUP, false);
+//
+//        startActivity(intent);
     }
 
 }

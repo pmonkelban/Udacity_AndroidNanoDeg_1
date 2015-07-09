@@ -8,12 +8,13 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
-import android.media.session.MediaSessionManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+
+import com.squareup.picasso.Picasso;
 
 import udacity.nano.spotifystreamer.PlayList;
 import udacity.nano.spotifystreamer.R;
@@ -33,7 +34,7 @@ public class StreamerMediaService extends Service {
     static final String ACTION_NEXT = "action_next";
     static final String ACTION_STOP = "action_stop";
 
-
+    public static final int NOTIFICATION_ID = 10;
 
 
 
@@ -43,10 +44,10 @@ public class StreamerMediaService extends Service {
 //
 //    public static final String ON_COMPLETE_BROADCAST_FILTER = "streamer-media-service-on-complete";
 //
-    private MediaPlayer mMediaPlayer;
-    private MediaSessionManager mManager;
     private MediaSession mSession;
     private MediaController mController;
+    private MediaPlayer mMediaPlayer;
+
     //
 //
 //    MediaPlayer.OnCompletionListener mOnCompletionListener = null;
@@ -75,7 +76,7 @@ public class StreamerMediaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mManager == null) {
+        if (mSession == null) {
             initMediaSessions();
         }
 
@@ -111,10 +112,17 @@ public class StreamerMediaService extends Service {
         }
     }
 
+    public MediaSession.Token getMediaSessionToken()  {
+        if (mSession == null) return null;
+        return mSession.getSessionToken();
+    }
 
     private void initMediaSessions() {
 
         mMediaPlayer = new MediaPlayer();
+
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
         mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 
@@ -157,13 +165,11 @@ public class StreamerMediaService extends Service {
                 super.onPlay();
 
                 try {
-
-                    mMediaPlayer = MediaPlayer.create(StreamerMediaService.this, Uri.parse(playList.getCurrentTrackURI()));
-                    mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
+                    mMediaPlayer = MediaPlayer.create(StreamerMediaService.this,
+                            Uri.parse(playList.getCurrentTrackURI()));
 
                 } catch (Exception e) {
-                    Log.e(TAG, "Error in reset(): " + e.getMessage());
+                    Log.e(TAG, "Error in onPlay(): " + e.getMessage());
                 }
 
                 new NotificationTarget(
@@ -207,9 +213,9 @@ public class StreamerMediaService extends Service {
 
                 new NotificationTarget(
                         getApplicationContext(),
-                        android.R.drawable.ic_media_pause,
-                        getResources().getString(R.string.pause),
-                        ACTION_PAUSE,
+                        android.R.drawable.ic_media_play,
+                        getResources().getString(R.string.play),
+                        ACTION_PLAY,
                         playList.getCurrentTrackName(),
                         playList.getCurrentTrackId(),
                         playList.getCurrentTrackImage(),
@@ -227,9 +233,9 @@ public class StreamerMediaService extends Service {
 
                 new NotificationTarget(
                         getApplicationContext(),
-                        android.R.drawable.ic_media_pause,
-                        getResources().getString(R.string.pause),
-                        ACTION_PAUSE,
+                        android.R.drawable.ic_media_play,
+                        getResources().getString(R.string.play),
+                        ACTION_PLAY,
                         playList.getCurrentTrackName(),
                         playList.getCurrentTrackId(),
                         playList.getCurrentTrackImage(),
@@ -243,10 +249,10 @@ public class StreamerMediaService extends Service {
             public void onStop() {
                 Log.d(TAG, "onStop() called");
                 super.onStop();
-                NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                notificationManager.cancel(1);
-                Intent intent = new Intent(getApplicationContext(), StreamerMediaService.class);
-                stopService(intent);
+                ((NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE))
+                        .cancel(NOTIFICATION_ID);
+
+                stopService(new Intent(getApplicationContext(), StreamerMediaService.class));
             }
 
             @Override
@@ -260,6 +266,28 @@ public class StreamerMediaService extends Service {
     public void setPlayList(PlayList playList) {
         this.playList = playList.copy();
     }
+
+    public MediaPlayer getMediaPlayer()  {
+        return mMediaPlayer;
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy() called");
+
+        // Cancel ending pending image downloads.
+        Picasso.with(this).cancelRequest(mNotificationTarget);
+
+        // Cancel the notification
+        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).cancel(NOTIFICATION_ID);
+
+        // Close the media session
+        mSession.release();
+        mSession = null;
+
+        super.onDestroy();
+    }
+
 
 //
 //    public boolean reset(Uri trackUri, String spotifyId) {

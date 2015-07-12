@@ -12,14 +12,7 @@
         android:maxHeight="@dimen/track_image_display_width"
         android:maxWidth="@dimen/track_image_display_width"
         android:minHeight="@dimen/track_image_display_width"
-        android:minWidth="@dimen/track_image_display_width"/>
-
-    <!--
-        android:maxHeight="@dimen/track_image_height"
-        android:maxWidth="@dimen/track_image_width"
-        android:minHeight="@dimen/track_image_height"
-        android:minWidth="@dimen/track_image_width"
-    -->
+        android:minWidth="@dimen/track_image_display_width" />
 
     <TableLayout
         android:layout_width="wrap_content"
@@ -29,8 +22,8 @@
 
             <TextView
                 android:layout_column="1"
-                android:padding="3dp"
                 android:gravity="start"
+                android:paddingLeft="3dp"
                 android:text="@string/artist_label" />
 
             <TextView
@@ -38,7 +31,7 @@
                 android:layout_column="2"
                 android:ellipsize="end"
                 android:gravity="start"
-                android:padding="3dp"
+                android:paddingLeft="3dp"
                 android:singleLine="true" />
         </TableRow>
 
@@ -46,8 +39,8 @@
 
             <TextView
                 android:layout_column="1"
-                android:padding="3dp"
                 android:gravity="start"
+                android:paddingLeft="3dp"
                 android:text="@string/track_label" />
 
             <TextView
@@ -55,7 +48,7 @@
                 android:layout_column="2"
                 android:ellipsize="end"
                 android:gravity="start"
-                android:padding="3dp"
+                android:paddingLeft="3dp"
                 android:singleLine="true" />
 
         </TableRow>
@@ -64,8 +57,8 @@
 
             <TextView
                 android:layout_column="1"
-                android:padding="3dp"
                 android:gravity="start"
+                android:paddingLeft="3dp"
                 android:text="@string/album_label" />
 
             <TextView
@@ -73,48 +66,69 @@
                 android:layout_column="2"
                 android:ellipsize="end"
                 android:gravity="start"
-                android:padding="3dp"
+                android:paddingLeft="3dp"
                 android:singleLine="true" />
         </TableRow>
 
     </TableLayout>
 
-    <SeekBar
-        android:id="@+id/seek_bar"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="30000" />
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
         android:layout_gravity="center_horizontal"
         android:orientation="horizontal">
 
-        <ImageButton
-            android:id="@+id/button_prev"
+        <TextView
+            android:id="@+id/seek_bar_start_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_previous" />
+            android:layout_gravity="center_vertical"
+            android:paddingLeft="3dp"
+            android:paddingRight="3dp"
+            android:text="00:00" />
+
+        <SeekBar
+            android:id="@+id/seek_bar"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:max="30000"
+            android:maxHeight="5dp"
+            android:minHeight="5dp" />
+
+        <TextView
+            android:id="@+id/seek_bar_end_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:paddingLeft="3dp"
+            android:paddingRight="3dp"
+            android:text="00:00" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:orientation="horizontal"
+        android:layout_gravity="center_horizontal">
+
+        <ImageButton
+            android:id="@+id/button_prev"
+            style="@android:style/MediaButton.Previous" />
 
         <ImageButton
             android:id="@+id/button_play"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_play"
-            android:visibility="gone" />
+            style="@android:style/MediaButton.Play" />
 
         <ImageButton
             android:id="@+id/button_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_pause" />
+            style="@android:style/MediaButton.Pause" />
 
         <ImageButton
             android:id="@+id/button_next"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_next" />
+            style="@android:style/MediaButton.Next" />
 
     </LinearLayout>
 

@@ -149,10 +149,19 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
+        /*
+        * TODO:  Determine why data is null.  Check network state.
+        */
         if (data == null)  {
+
+            // Clear track list data and display a Toast
+            mCallback.onArtistSelected(null);
             Toast.makeText(getActivity(), R.string.artist_list_error, Toast.LENGTH_SHORT).show();
 
         } else if (data.getCount() == 0)  {
+
+            // Clear track list data and display a Toast
+            mCallback.onArtistSelected(null);
             Toast.makeText(getActivity(), R.string.artist_list_empty, Toast.LENGTH_SHORT).show();
         }
 

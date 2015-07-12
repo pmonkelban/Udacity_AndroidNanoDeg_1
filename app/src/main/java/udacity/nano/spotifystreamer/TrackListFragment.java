@@ -21,8 +21,10 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.activities.NowPlayingActivity;
+import udacity.nano.spotifystreamer.activities.SpotifyStreamerActivity;
 import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
 import udacity.nano.spotifystreamer.data.StreamerProvider;
+import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
 
 public class TrackListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -51,23 +53,41 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     private static final int TRACK_LOADER_ID = 1;
 
     /*
-    * When we receive notice that the track has finished playing, move on
-    * to the next track.
+    * When we receive notice that the track has started playing, highlight the
+    * corresponding entry (if we have it).
     */
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive() called");
 
-            switch(intent.getAction())  {
-                case NowPlayingActivity.TRACK_CHANGE_BROADCAST_FILTER:  {
+            switch (intent.getAction()) {
+                case StreamerMediaService.TRACK_START_BROADCAST_FILTER: {
 
                     // When a track is finished, update the currently highlighted track.
-                    mPosition =
-                            intent.getIntExtra(NowPlayingActivity.TRACK_CHANGE_CURRENT_TRACK_NUM, 0);
+                    PlayListItem item = intent.getParcelableExtra(SpotifyStreamerActivity.KEY_CURRENT_TRACK);
 
-                    mTrackListView.setItemChecked(mPosition, true);
-                    mTrackListView.smoothScrollToPosition(mPosition);
+                    for (int p = 0; p < mTrackListView.getAdapter().getCount(); p++) {
+                        Cursor cursor = (Cursor) mTrackListView.getItemAtPosition(p);
+
+                        if (!cursor.isClosed()) {
+                            String listItemSpotifyId = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
+
+                            if (item.getTrackId().equals(listItemSpotifyId)) {
+                                mPosition = p;
+                                mTrackListView.setItemChecked(mPosition, true);
+                                mTrackListView.smoothScrollToPosition(mPosition);
+                                break;  // break for loop
+                            }
+                        }
+                    }
+
+                    break;
+                }
+                case StreamerMediaService.TRACK_STOP_BROADCAST_FILTER: {
+
+                    // Clear the currently highlighted track.
+                    mTrackListView.setItemChecked(mPosition, false);
                     break;
                 }
 
@@ -93,10 +113,15 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
-        // Register to receive track change broadcast notifications
+        // Register to receive track start broadcast notifications
         LocalBroadcastManager.getInstance(getActivity().getApplicationContext()).registerReceiver(
                 mBroadcastReceiver,
-                new IntentFilter(NowPlayingActivity.TRACK_CHANGE_BROADCAST_FILTER));
+                new IntentFilter(StreamerMediaService.TRACK_START_BROADCAST_FILTER));
+
+        // Register to receive track stop broadcast notifications
+        LocalBroadcastManager.getInstance(getActivity().getApplicationContext()).registerReceiver(
+                mBroadcastReceiver,
+                new IntentFilter(StreamerMediaService.TRACK_STOP_BROADCAST_FILTER));
 
     }
 
@@ -147,14 +172,13 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
-                String trackSpotifyId  = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
+                String trackSpotifyId = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
                 String artistSpotifyId = cursor.getString(StreamerProvider.IDX_ARTIST_SPOTIFY_ID);
 
-                intent.putExtra(NowPlayingActivity.EXTRA_KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
-                intent.putExtra(NowPlayingActivity.EXTRA_KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);
+                intent.putExtra(SpotifyStreamerActivity.KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
+                intent.putExtra(SpotifyStreamerActivity.KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);
 
                 startActivity(intent);
-
 
                 mPosition = position;
 
@@ -184,7 +208,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        if (data == null)  {
+        if (data == null) {
             Toast.makeText(getActivity(), R.string.track_list_error, Toast.LENGTH_SHORT).show();
 
         } else if (data.getCount() == 0) {

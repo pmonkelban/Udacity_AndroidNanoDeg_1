@@ -1,14 +1,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
+    <item android:id="@+id/item_now_playing"
         android:orderInCategory="100"
-        app:showAsAction="never" />
+        android:title="@string/now_playing"
+        android:visible="false"
+        app:showAsAction="always" />
 
-    <item android:id="@+id/action_share"
+    <item android:id="@+id/item_share"
         android:title="@string/action_share"
+        android:visible="false"
         android:orderInCategory="200"
+        app:showAsAction="always"
+        app:actionProviderClass="android.support.v7.widget.ShareActionProvider" />
+
+    <item android:id="@+id/item_settings"
+        android:title="@string/action_settings"
+        android:orderInCategory="300"
         app:showAsAction="never" />
 
 </menu>

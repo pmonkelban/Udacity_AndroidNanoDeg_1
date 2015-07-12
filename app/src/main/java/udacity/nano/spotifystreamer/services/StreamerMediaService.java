@@ -9,24 +9,29 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import udacity.nano.spotifystreamer.PlayListItem;
 import udacity.nano.spotifystreamer.R;
+import udacity.nano.spotifystreamer.activities.MainActivity;
+import udacity.nano.spotifystreamer.activities.SpotifyStreamerActivity;
 
 public class StreamerMediaService extends Service {
 
     private final String TAG = this.getClass().getCanonicalName();
 
-    private int NOTIFICATION = R.string.spotify_streamer_running;
-
     private NotificationManager mNotificationManager;
 
-    public static final String ON_COMPLETE_BROADCAST_FILTER = "streamer-media-service-on-complete";
+    public static final String TRACK_STOP_BROADCAST_FILTER = "streamer-media-service-on-complete";
+    public static final String TRACK_START_BROADCAST_FILTER = "streamer-media-service-track-started";
 
     MediaPlayer mMediaPlayer;
 
-    MediaPlayer.OnCompletionListener mOnCompletionListener = null;
+    private PlayListItem mCurrentlyPlaying;
+
+    private boolean continueOnCompletion;
 
     private final IBinder mBinder = new StreamerMediaServiceBinder();
 
@@ -48,7 +53,14 @@ public class StreamerMediaService extends Service {
 
     @Override
     public void onDestroy() {
-        mNotificationManager.cancel(NOTIFICATION);
+        mNotificationManager.cancel(NotificationTarget.NOTIFICATION_ID);
+
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .edit()
+                .putBoolean(MainActivity.PREF_IS_PLAYING, false)
+                .commit();
+
+        super.onDestroy();
     }
 
     @Override
@@ -56,12 +68,14 @@ public class StreamerMediaService extends Service {
         return mBinder;
     }
 
-    public boolean reset(Uri trackUri, String spotifyId) {
+    public boolean reset(final PlayListItem playListItem) {
 
         try {
             stop();
 
-            mMediaPlayer = MediaPlayer.create(this, trackUri);
+            mCurrentlyPlaying = playListItem;
+
+            mMediaPlayer = MediaPlayer.create(this, Uri.parse(playListItem.getTrackUri()));
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
@@ -70,6 +84,23 @@ public class StreamerMediaService extends Service {
                 public void onPrepared(MediaPlayer mp) {
                     Log.d(TAG, "onPrepared() called");
                     mMediaPlayer.start();
+
+                    // Notify listeners that a new track has started.
+
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                            .edit()
+                            .putString(MainActivity.PREF_CURRENT_ALBUM, playListItem.getAlbumName())
+                            .putString(MainActivity.PREF_CURRENT_ARTIST_NAME, playListItem.getArtistName())
+                            .putString(MainActivity.PREF_CURRENT_ARTIST_SPOTIFY_ID, playListItem.getArtistId())
+                            .putString(MainActivity.PREF_CURRENT_TRACK_NAME, playListItem.getTrackName())
+                            .putString(MainActivity.PREF_CURRENT_TRACK_SPOTIFY_ID, playListItem.getTrackId())
+                            .putString(MainActivity.PREF_CURRENT_TRACK_URL, playListItem.getTrackUri())
+                            .putBoolean(MainActivity.PREF_IS_PLAYING, true)
+                            .commit();
+
+                    Intent intent = new Intent(TRACK_START_BROADCAST_FILTER);
+                    intent.putExtra(SpotifyStreamerActivity.KEY_CURRENT_TRACK, playListItem);
+                    LocalBroadcastManager.getInstance(StreamerMediaService.this).sendBroadcast(intent);
                 }
             });
 
@@ -84,9 +115,27 @@ public class StreamerMediaService extends Service {
             mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    Intent intent = new Intent(ON_COMPLETE_BROADCAST_FILTER);
+
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                            .edit()
+                            .putBoolean(MainActivity.PREF_IS_PLAYING, false)
+                            .commit();
+
+                    if (!continueOnCompletion) {
+
+                        mNotificationManager.cancel(NotificationTarget.NOTIFICATION_ID);
+
+                        PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                                .edit()
+                                .putBoolean(MainActivity.PREF_IS_PLAYING, false)
+                                .commit();
+                    }
+
+                    // Notify listeners that the track has completed.
+                    Intent intent = new Intent(TRACK_STOP_BROADCAST_FILTER);
                     LocalBroadcastManager.getInstance(StreamerMediaService.this).sendBroadcast(intent);
                 }
+
             });
 
         } catch (Exception e) {
@@ -104,6 +153,19 @@ public class StreamerMediaService extends Service {
                 mMediaPlayer.pause();
             }
 
+            new NotificationTarget(
+                    getApplicationContext(),
+                    android.R.drawable.ic_media_play,
+                    getResources().getString(R.string.play),
+                    SpotifyStreamerActivity.ACTION_PLAY,
+                    mCurrentlyPlaying.getTrackName(),
+                    mCurrentlyPlaying.getTrackId(),
+                    mCurrentlyPlaying.getTrackImage(),
+                    mCurrentlyPlaying.getArtistName(),
+                    mCurrentlyPlaying.getArtistId(),
+                    mCurrentlyPlaying.getAlbumName()
+            ).issueNotification();
+
         } catch (Exception e) {
             Log.e(TAG, "Error in pause(): " + e.getMessage());
             return false;
@@ -119,6 +181,19 @@ public class StreamerMediaService extends Service {
             if ((mMediaPlayer != null) && (!mMediaPlayer.isPlaying())) {
                 mMediaPlayer.start();
             }
+
+            new NotificationTarget(
+                    getApplicationContext(),
+                    android.R.drawable.ic_media_pause,
+                    getResources().getString(R.string.pause),
+                    SpotifyStreamerActivity.ACTION_PAUSE,
+                    mCurrentlyPlaying.getTrackName(),
+                    mCurrentlyPlaying.getTrackId(),
+                    mCurrentlyPlaying.getTrackImage(),
+                    mCurrentlyPlaying.getArtistName(),
+                    mCurrentlyPlaying.getArtistId(),
+                    mCurrentlyPlaying.getAlbumName()
+            ).issueNotification();
 
         } catch (Exception e) {
             Log.e(TAG, "Error in play(): " + e.getMessage());
@@ -141,7 +216,7 @@ public class StreamerMediaService extends Service {
                 mMediaPlayer.release();
                 mMediaPlayer = null;
             }
-        } catch (Exception e)  {
+        } catch (Exception e) {
             Log.e(TAG, "Error in stop(): " + e.getMessage());
             return false;
         }
@@ -156,7 +231,7 @@ public class StreamerMediaService extends Service {
                 mMediaPlayer.seekTo(miliSeconds);
             }
 
-        } catch (Exception e)  {
+        } catch (Exception e) {
             Log.e(TAG, "Error in seekTo(): " + e.getMessage());
             return false;
         }
@@ -178,4 +253,7 @@ public class StreamerMediaService extends Service {
         return mMediaPlayer.isPlaying();
     }
 
+    public void setContinueOnCompletion(boolean continueOnCompletion) {
+        this.continueOnCompletion = continueOnCompletion;
+    }
 }

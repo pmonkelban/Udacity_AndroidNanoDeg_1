@@ -1,16 +1,11 @@
 package udacity.nano.spotifystreamer.activities;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.ArtistListFragment;
 import udacity.nano.spotifystreamer.R;
@@ -21,7 +16,7 @@ import udacity.nano.spotifystreamer.data.StreamerContract;
  * The app's main activity.
  * Kicks off ArtistListFragment
  */
-public class MainActivity extends ActionBarActivity implements ArtistListFragment.Callback {
+public class MainActivity extends SpotifyStreamerActivity implements ArtistListFragment.Callback {
 
     private final String TAG = getClass().getCanonicalName();
 
@@ -31,22 +26,7 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     // Used to format the currently playing track when shared.
     private final String NEWLINE = System.getProperty("line.separator");
 
-    public static final String PREF_CURRENT_TRACK_NAME = "prefs_current_track_name";
-    public static final String PREF_CURRENT_ALBUM = "prefs_current_album";
-    public static final String PREF_CURRENT_ARTIST = "prefs_current_artist";
-    public static final String PREF_CURRENT_TRACK_URL = "prefs_current_track_url";
-
-    public static final String PREF_COUNTRY_CODE = "prefs_country_code";
-    public static final String PREF_ALLOW_EXPLICIT = "prefs_allow_explicit";
-    public static final String PREF_ALLOW_ON_LOCK = "prefs_show_on_lock";
-
     private boolean mIsTwoPanel = false;
-
-    /*
-    * Request codes returned from Activities started with startActivityForResult()
-    */
-    private static final int TRACK_LIST_REQUEST_CODE = 1;
-    private static final int SETTINGS_ACTIVITY_REQUEST_CODE = 2;
 
     // The text field where the user enters their search.
     private SearchView mArtistSearchText;
@@ -163,57 +143,9 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY_REQUEST_CODE);
-            return true;
-        }
-
-        if (id == R.id.action_share) {
-
-            // The Uri of the most recently played track is stored in preferences.
-            SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            String currentTrackUrl = settings.getString(PREF_CURRENT_TRACK_URL, null);
-
-
-            if ((currentTrackUrl == null) || (currentTrackUrl.length() == 0)) {
-                Toast.makeText(this, getString(R.string.share_no_tracks_played), Toast.LENGTH_SHORT).show();
-
-            } else  {
-
-                String currentArtist = settings.getString(PREF_CURRENT_ARTIST, "");
-                String currentAlbum = settings.getString(PREF_CURRENT_ALBUM, "");
-                String currentTrackName = settings.getString(PREF_CURRENT_TRACK_NAME, "");
-
-                /*
-                * Use a shareIntent to expose the external Spotify URL for the current track.
-                */
-
-                String shareMsg =
-                        currentTrackUrl + NEWLINE + NEWLINE +
-                        "Artist: " + currentArtist + NEWLINE +
-                        "Track: " + currentTrackName + NEWLINE +
-                        "Album: " + currentAlbum;
-
-                Intent sendIntent = new Intent();
-                sendIntent.setAction(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_TEXT, shareMsg);
-                sendIntent.setType("text/plain");
-                startActivity(sendIntent);
-
-            }
-
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
 
     @Override
     public void onArtistSelected(Uri trackListUri) {
@@ -258,7 +190,10 @@ public class MainActivity extends ActionBarActivity implements ArtistListFragmen
             * code may have changed, so we want to update the track list to
             * reflect that.
             */
-            onArtistSelected(mLastTrackListUri);
+
+            if (mIsTwoPanel) {
+                onArtistSelected(mLastTrackListUri);
+            }
         }
     }
 

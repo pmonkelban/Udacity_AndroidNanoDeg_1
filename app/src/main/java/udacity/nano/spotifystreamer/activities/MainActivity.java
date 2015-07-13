@@ -1,8 +1,10 @@
 package udacity.nano.spotifystreamer.activities;
 
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
@@ -11,6 +13,7 @@ import udacity.nano.spotifystreamer.ArtistListFragment;
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.TrackListFragment;
 import udacity.nano.spotifystreamer.data.StreamerContract;
+import udacity.nano.spotifystreamer.services.NotificationTarget;
 
 /*
  * The app's main activity.
@@ -20,12 +23,22 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
 
     private final String TAG = getClass().getCanonicalName();
 
-    static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
-    static final String ARTIST_LIST_FRAGMENT = "ARTIST_LIST_FRAG";
+    /*
+    * Handles ot the Artist and Track list fragments.
+    */
+    static final String TRACK_LIST_FRAGMENT_ID = "TRACK_LIST_FRAG";
+    static final String ARTIST_LIST_FRAGMENT_ID = "ARTIST_LIST_FRAG";
 
-    // Used to format the currently playing track when shared.
-    private final String NEWLINE = System.getProperty("line.separator");
+    /*
+    * We'll store an item during onSavedInstanceSate() so we know if this is
+    * the first time the app is starting, or if it's being restarted (i.e.
+    * after a configuration change.  If it's the first time through,
+    * we'll make sure that any preferences and/or notifications are
+    * set to a clean state.
+    */
+    private static final String FIRST_TIME_THROUGH = "bundle-first-time";
 
+    // Set to true if we're in 2 panel (tablet) mode.
     private boolean mIsTwoPanel = false;
 
     // The text field where the user enters their search.
@@ -49,6 +62,10 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
+        /*
+        * Determine if we're in single or 2 panel mode.  We can tell by the presence of the
+        * track_list_container.
+        */
         if (findViewById(R.id.track_list_container) != null) {
             mIsTwoPanel = true;
             Log.d(TAG, "Using Two Panel Mode");
@@ -56,7 +73,8 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
             if (savedInstanceState == null) {
                 getFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.track_list_container, new TrackListFragment(), TRACK_LIST_FRAGMENT)
+                        .replace(R.id.track_list_container,
+                                new TrackListFragment(), TRACK_LIST_FRAGMENT_ID)
                         .commit();
             }
 
@@ -66,7 +84,36 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
             getSupportActionBar().setElevation(0f);
         }
 
-        if (savedInstanceState != null) {
+        if (savedInstanceState == null) {
+
+            /*
+            * First time starting up. It's possible preferences contains invalid data, so
+            * clear it out.
+            */
+            PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                    .edit()
+                    .putString(MainActivity.PREF_CURRENT_ALBUM, null)
+                    .putString(MainActivity.PREF_CURRENT_ARTIST_NAME, null)
+                    .putString(MainActivity.PREF_CURRENT_ARTIST_SPOTIFY_ID, null)
+                    .putString(MainActivity.PREF_CURRENT_TRACK_NAME, null)
+                    .putString(MainActivity.PREF_CURRENT_TRACK_SPOTIFY_ID, null)
+                    .putString(MainActivity.PREF_CURRENT_TRACK_URL, null)
+                    .putBoolean(MainActivity.PREF_IS_PLAYING, false)
+                    .commit();
+
+            // Also may have an orphaned notification
+            NotificationManager mNotificationManager =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+            mNotificationManager.cancel(NotificationTarget.NOTIFICATION_ID);
+
+
+        } else {
+
+            /*
+            * Not the first time loading, so retrieve the most recent search, and use
+            * it to re-populate the artist list.
+            */
             if (savedInstanceState.containsKey(ArtistListFragment.BUNDLE_KEY_LAST_SEARCH)) {
 
                 Bundle bundle = new Bundle();
@@ -79,7 +126,7 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
 
                 getFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
+                        .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT_ID)
                         .commit();
             }
         }
@@ -101,7 +148,6 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
                  * a bug where hitting enter with a real keyboard results in two
                  * events firing.
                  */
-
                 long time = System.currentTimeMillis();
 
                 if ((mLastSearchTime + SEARCH_REQUEST_WINDOW) < time) {
@@ -121,10 +167,11 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
 
                     getFragmentManager()
                             .beginTransaction()
-                            .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT)
+                            .replace(R.id.artist_list_container, fragment, ARTIST_LIST_FRAGMENT_ID)
                             .commit();
 
                     return true;
+
                 } else {
                     Log.d(TAG, "Duplicate search request detected - Ignoring");
                     return false;
@@ -141,11 +188,22 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+
+        /*
+        * Set this to ensure we can detect subsequent start ups.
+        */
+        outState.putBoolean(FIRST_TIME_THROUGH, false);
+        super.onSaveInstanceState(outState);
+
+    }
 
     @Override
     public void onArtistSelected(Uri trackListUri) {
@@ -163,7 +221,7 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
 
             getFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
+                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT_ID)
                     .commitAllowingStateLoss();
 
         } else {
@@ -180,7 +238,7 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data)  {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         if (requestCode == SETTINGS_ACTIVITY_REQUEST_CODE) {
 
@@ -190,13 +248,9 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
             * code may have changed, so we want to update the track list to
             * reflect that.
             */
-
             if (mIsTwoPanel) {
                 onArtistSelected(mLastTrackListUri);
             }
         }
     }
-
-
-
 }

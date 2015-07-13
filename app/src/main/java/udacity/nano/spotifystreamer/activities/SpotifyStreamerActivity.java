@@ -25,8 +25,6 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     public static final String ACTION_NO_OP = "action_no_op";
     public static final String ACTION_PLAY = "action_play";
     public static final String ACTION_PAUSE = "action_pause";
-    public static final String ACTION_REWIND = "action_rewind";
-    public static final String ACTION_FAST_FORWARD = "action_fast_forward";
     public static final String ACTION_PREVIOUS = "action_prev";
     public static final String ACTION_NEXT = "action_next";
 
@@ -47,9 +45,7 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     public static final String PREF_ALLOW_ON_LOCK = "prefs_show_on_lock";
     public static final String PREF_IS_PLAYING = "prefs_is_playing";
 
-
     private ShareActionProvider mShareActionProvider;
-
 
     /*
     * Request codes returned from Activities started with startActivityForResult()
@@ -60,7 +56,6 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     private MenuItem mNowPlayingMenuItem;
     private MenuItem mShareTrackMenuItem;
 
-//    protected PlayListItem mCurrentlyPlaying;
 
     // Used to format the currently playing track when shared.
     protected final String NEWLINE = System.getProperty("line.separator");
@@ -91,6 +86,7 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     };
 
     protected void onTrackStart() {
+
         mNowPlayingMenuItem.setVisible(true);
 
         mShareActionProvider.setShareIntent(createShareTrackIntent());
@@ -122,8 +118,8 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
-        mNowPlayingMenuItem = (MenuItem) menu.findItem(R.id.item_now_playing);
-        mShareTrackMenuItem = (MenuItem) menu.findItem(R.id.item_share);
+        mNowPlayingMenuItem = menu.findItem(R.id.item_now_playing);
+        mShareTrackMenuItem = menu.findItem(R.id.item_share);
         mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(mShareTrackMenuItem);
 
 
@@ -174,10 +170,6 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
                 startActivityForResult(new Intent(this, SettingsActivity.class),
                         SETTINGS_ACTIVITY_REQUEST_CODE);
                 break;
-
-//            case R.id.item_share:
-//                handleShareAction();
-//                break;
 
             case R.id.item_now_playing:
                 handleNowPlayingAction();

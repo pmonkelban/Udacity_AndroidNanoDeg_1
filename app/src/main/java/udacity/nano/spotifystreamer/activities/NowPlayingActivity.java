@@ -8,8 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -30,37 +28,48 @@ public class NowPlayingActivity extends Activity
 
     public final String TAG = getClass().getCanonicalName();
 
-    public static final String NOW_PLAYING_FRAGMENT = "Now_Playing_Fragment";
+    public static final String NOW_PLAYING_FRAGMENT_ID = "Now_Playing_Fragment";
+
+    // Key used to store the current position in the playlist
     public static final String CURRENT_PLAYLIST_POSITION = "current_playlist_position";
 
+    private static final int SEEK_BAR_UPDATE_INTERVAL = 1000; // in milliseconds.
 
-    NowPlayingFragment.NowPlayingListener mListener;
-
+    // Ids of the most recent track and artist.
     private String mTrackSpotifyId;
     private String mArtistSpotifyId;
 
+    // Holds the tracks associated with the current artists.
     PlayList mPlayList;
 
+    /*
+    * It may happen that the user clicks play or pause before we're connected to the
+    * StreamerMediaService.  In this case, we'll use these to flag what should happen
+    * when the service is connected.
+    */
     private boolean mPlayOnServiceConnect = false;
     private boolean mPauseOnServiceConnect = false;
 
     private NowPlayingFragment mNowPlayingFragment;
 
+    // The service we'll use to play the music.
     StreamerMediaService mStreamerService;
     boolean isStreamerServiceBound = false;
-
-    private Bitmap mNoImageAvailableBitmap;
 
     // Handles updates to the progress bar.
     private Handler mHandler = new Handler();
 
-    // An ID for our notification so we can update or remove them later.
-    private int NOTIFICATION_ID = 27;  // Value doesn't matter
-    private int NOTIFICATION_REQUEST_CODE = 42;  // Value doesn't matter
-
+    /*
+    * When a new track is selected, we'll want to stop the current one, and begin playing the
+    * next.  However, if the user comes in from a notification, or from now playing, then
+    * we do not want to restart the track.
+    */
     private boolean mResetOnStartup;
 
 
+    /*
+    * Handles our connection to the StreamerMediaService.
+    */
     private ServiceConnection mStreamerServiceConnection = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -69,6 +78,7 @@ public class NowPlayingActivity extends Activity
 
             StreamerMediaService.StreamerMediaServiceBinder binder =
                     (StreamerMediaService.StreamerMediaServiceBinder) service;
+
             mStreamerService = binder.getService();
             isStreamerServiceBound = true;
 
@@ -97,14 +107,14 @@ public class NowPlayingActivity extends Activity
                     onPauseClicked();
                 }
 
+                // Helps get the play/pause button to the right state.
                 setIsPlaying(mStreamerService.isPlaying());
 
             }
 
-
             /*
             * Create a process to update the seek bar location every second.
-            * Also keeps the play/pause status up to date.  The play/pause
+            * Also keeps the play/pause button status up to date.  The play/pause
             * status can be off if the user clicks it too quickly.  This will straighten
             * it out every second.
             */
@@ -117,7 +127,7 @@ public class NowPlayingActivity extends Activity
                         mNowPlayingFragment.setIsPlaying(mStreamerService.isPlaying());
                     }
 
-                    if (isStreamerServiceBound) mHandler.postDelayed(this, 1000);
+                    if (isStreamerServiceBound) mHandler.postDelayed(this, SEEK_BAR_UPDATE_INTERVAL);
                 }
             });
         }
@@ -154,6 +164,9 @@ public class NowPlayingActivity extends Activity
         outState.putBoolean(SpotifyStreamerActivity.KEY_IS_PLAYING, mStreamerService.isPlaying());
     }
 
+    /*
+    * Handles intents coming in from notifications.
+    */
     @Override
     public void onNewIntent(Intent i) {
         super.onNewIntent(i);
@@ -186,8 +199,14 @@ public class NowPlayingActivity extends Activity
         if (savedInstanceState == null) {
             getFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.now_playing_container, new NowPlayingFragment(), NOW_PLAYING_FRAGMENT)
+                    .replace(R.id.now_playing_container,
+                            new NowPlayingFragment(),NOW_PLAYING_FRAGMENT_ID)
                     .commit();
+
+            /*
+            * savedInstanceState is null, so this is our first time starting up.  We'll want
+            * to reset and begin playing the first track.
+            */
             mResetOnStartup = true;
 
         } else {
@@ -197,9 +216,13 @@ public class NowPlayingActivity extends Activity
             * is connected.  At that point, we can use the service to determine if we're
             * currently playing.
             */
-            mResetOnStartup = false;
             savedPlayListPosition =
                     savedInstanceState.getInt(CURRENT_PLAYLIST_POSITION);
+
+            /*
+            * Not our first time starting up, so just continue playing the current track.
+            */
+            mResetOnStartup = false;
         }
 
         Intent callingIntent = getIntent();
@@ -221,12 +244,17 @@ public class NowPlayingActivity extends Activity
             return;
         }
 
-        mTrackSpotifyId = callingIntent.getStringExtra(SpotifyStreamerActivity.KEY_TRACK_SPOTIFY_ID);
-        mArtistSpotifyId = callingIntent.getStringExtra(SpotifyStreamerActivity.KEY_ARTIST_SPOTIFY_ID);
+        mTrackSpotifyId = callingIntent.getStringExtra(
+                SpotifyStreamerActivity.KEY_TRACK_SPOTIFY_ID);
+
+        mArtistSpotifyId = callingIntent.getStringExtra(
+                SpotifyStreamerActivity.KEY_ARTIST_SPOTIFY_ID);
 
         if ((mTrackSpotifyId == null) || (mArtistSpotifyId == null)) {
-            throw new IllegalArgumentException("Must provide both the spotify track ID and " +
-                    "spotify artist ID for the track you wish to play.");
+            Log.e(TAG, "Must provide both the spotify track ID and " +
+                    "spotify artist ID for the track you wish to play. Probably the result of a" +
+                    " dead notification");
+
         }
 
 
@@ -240,6 +268,10 @@ public class NowPlayingActivity extends Activity
                 mBroadcastReceiver,
                 new IntentFilter(StreamerMediaService.TRACK_STOP_BROADCAST_FILTER));
 
+        /*
+        * Uses mTrackSpotifyId and mArtistSpotifyId to load track data into the PlayList.  May
+        * modify savedPlayListPosition.
+        */
         loadTrackData();
 
         if (savedPlayListPosition >= 0)  {
@@ -252,16 +284,16 @@ public class NowPlayingActivity extends Activity
         bindService(startMediaServiceIntent, mStreamerServiceConnection,
                 Context.BIND_AUTO_CREATE);
 
-        // Load our default "No Image Available" icon into a Bitmap
-        mNoImageAvailableBitmap = BitmapFactory.decodeResource(getResources(),
-                R.drawable.image_not_available);
-
     }
 
     private boolean isPlaying() {
         return (mStreamerService == null) ? false : mStreamerService.isPlaying();
     }
 
+    /*
+    * Loads data from the content provider into a PlayList object.  Sets the play list position
+    * to match the track given in mTrackSpotifyId.
+    */
     private void loadTrackData() {
 
         /*
@@ -310,15 +342,22 @@ public class NowPlayingActivity extends Activity
         } catch (Exception e) {
 
             /* We can get an exception if, for example, the database cursor comes back null.
-            * In that case, we'll show a Toast and call finish(), since there's nothing that
-            * can be done here.
+            * In that case, we'll show a Toast and restart the app, since there's nothing more
+            * that can be done.
             * Set mNumberOfTracks to 0 to indicate an error.
-            * Insert empty values into arrays to prevent further errors.
+            * This is probably the result of a orphaned notification.  That is, the app closed, the
+            * StreamerMediaSevice exited, but the last song that was playing never finished,
+            * therefore the notification never got cancelled.  If the user clicks on that
+            * notification, we won't be able to play it until the StreamerMediaService is started
+            * back up.  Best to restart the app.
             */
-
             mPlayList = new PlayList(0);
 
             Toast.makeText(getApplicationContext(), R.string.error_restoring_state, Toast.LENGTH_SHORT).show();
+
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
             finish();
 
         } finally {
@@ -329,10 +368,17 @@ public class NowPlayingActivity extends Activity
         }
     }
 
+    /*
+    * When the NowPlayingFragment completes loading, it will call this method.  At that time
+    * we'll push the artist and track data down.
+    */
     public void requestContentRefresh() {
         refreshContent();
     }
 
+    /*
+    * Update NowPlayingFragment with the current artist and track info.
+    */
     private void refreshContent() {
 
         /*
@@ -343,7 +389,7 @@ public class NowPlayingActivity extends Activity
 
         if (mNowPlayingFragment == null) {
             mNowPlayingFragment = (NowPlayingFragment) getFragmentManager()
-                    .findFragmentByTag(NOW_PLAYING_FRAGMENT);
+                    .findFragmentByTag(NOW_PLAYING_FRAGMENT_ID);
         }
 
         PlayListItem item = mPlayList.getCurrentItem();
@@ -355,6 +401,11 @@ public class NowPlayingActivity extends Activity
         mNowPlayingFragment.setIsPlaying(isPlaying());
     }
 
+    /*
+    * Sets the status of the Play/Pause button.  This is temporary until the connection
+    * to the StreamerMediaService is re-established.  This state is read from the bundle
+    * that gets saved during a re-configuration cycle.
+    */
     private void setIsPlaying(boolean isPlaying) {
         mNowPlayingFragment.setIsPlaying(isPlaying);
     }
@@ -378,6 +429,7 @@ public class NowPlayingActivity extends Activity
             // Ignore exception.
         }
 
+        // Stop receiving track finished broadcasts.
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
 
         super.onDestroy();
@@ -389,6 +441,9 @@ public class NowPlayingActivity extends Activity
         super.onStop();
     }
 
+    /*
+    * Prepares the MediaService to play the next song.
+    */
     private void queueNextSong() {
         if (isStreamerServiceBound && (mPlayList.size() > 0)) {
             if (!mStreamerService.reset(mPlayList.getCurrentItem())) {
@@ -397,16 +452,14 @@ public class NowPlayingActivity extends Activity
         }
     }
 
-
     @Override
     public void onPlayClicked() {
 
         if (mPlayList.size() == 0) return;
 
         if (isStreamerServiceBound) {
+
             if (mStreamerService.play()) {
-
-
 
             } else {
                 Toast.makeText(this, R.string.media_error_general, Toast.LENGTH_SHORT).show();
@@ -414,9 +467,12 @@ public class NowPlayingActivity extends Activity
 
         } else {
 
+            /*
+            * Play was clicked, but we're not connected to the StreamerMediaService.  Start the
+            * service, and note that we want to begin playing.
+            */
             mPlayOnServiceConnect = true;
 
-            // Start the StreamerMedia service.
             Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
             startService(startMediaServiceIntent);
             bindService(startMediaServiceIntent, mStreamerServiceConnection,
@@ -437,9 +493,12 @@ public class NowPlayingActivity extends Activity
 
         } else {
 
+            /*
+            * Pause was clicked, but we're not connected to the StreamerMediaService.  Start the
+            * service, and note that we want to pause.
+            */
             mPauseOnServiceConnect = true;
 
-            // Start the StreamerMedia service.
             Intent startMediaServiceIntent = new Intent(this, StreamerMediaService.class);
             startService(startMediaServiceIntent);
             bindService(startMediaServiceIntent, mStreamerServiceConnection,
@@ -453,7 +512,11 @@ public class NowPlayingActivity extends Activity
         if (mPlayList.size() == 0) return;
 
         mPlayList.nextTrack();
+
+        // Push new data out to the NowPlayingFragment.
         refreshContent();
+
+        // Start the track.
         queueNextSong();
         onPlayClicked();
     }
@@ -464,7 +527,11 @@ public class NowPlayingActivity extends Activity
         if (mPlayList.size() == 0) return;
 
         mPlayList.previousTrack();
+
+        // Push new data out to the NowPlayingFragment.
         refreshContent();
+
+        // Play the track.
         queueNextSong();
         onPlayClicked();
     }

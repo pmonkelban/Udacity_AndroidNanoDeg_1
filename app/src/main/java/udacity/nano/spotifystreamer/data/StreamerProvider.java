@@ -101,7 +101,7 @@ public class StreamerProvider extends ContentProvider {
     * by relevance, so it's likely that they'll match what the user was searching for.  By
     * pre-fetching those tracks, we can provide better performance.
     */
-    private static final int NUM_RESULTS_TO_PRE_FETCH_TRACKS = 5;
+    private static final int NUM_RESULTS_TO_PRE_FETCH_TRACKS = 3;
 
     static {
 
@@ -178,6 +178,12 @@ public class StreamerProvider extends ContentProvider {
         return true;
     }
 
+    /*
+    * Allows us to override the SpotifyService for testing.
+    */
+    void setSpotifyService(SpotifyService service)  {
+        mSpotifyService = service;
+    }
 
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs,

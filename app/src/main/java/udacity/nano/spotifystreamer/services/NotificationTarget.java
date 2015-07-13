@@ -22,7 +22,7 @@ import udacity.nano.spotifystreamer.activities.SpotifyStreamerActivity;
     * onBitmapLoaded() method is called, this will create a Notification.
     * If the download fails, a default Bitmap image will be used instead.
     */
-class NotificationTarget implements Target {
+public class NotificationTarget implements Target {
 
     // An ID for our notification so we can update or remove them later.
     public static int NOTIFICATION_ID = 27;  // Value doesn't matter

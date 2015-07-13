@@ -30,7 +30,7 @@
 
     <string name="error_fetching_artists">Error retrieving list of Artists</string>
     <string name="error_fetching_tracks">Error retrieving list of Tracks</string>
-    <string name="error_restoring_state">Error restoring state.  Please close the app and re-start.</string>
+    <string name="error_restoring_state">Error restoring state.  App has been re-started.</string>
 
     <string name="spotify_streamer_running">Spotify Streamer is Running</string>
     <string name="spotify_streamer_unavailable">Spotify Streamer Service is unavailable.  Please try again.</string>

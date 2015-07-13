@@ -2,7 +2,10 @@ package udacity.nano.spotifystreamer.services;
 
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -41,9 +44,28 @@ public class StreamerMediaService extends Service {
         }
     }
 
+    /*
+    * Listens for headphone un-plug events.  We'll pause the current track when
+    * this event is received.
+    */
+    private BroadcastReceiver mNoisyAudioStreamReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent)  {
+
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction()))  {
+                pause();
+            }
+        }
+    };
+
     @Override
     public void onCreate() {
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        // Listen for headphone un-plug events.
+        registerReceiver(mNoisyAudioStreamReceiver,
+                new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
     }
 
     @Override
@@ -53,6 +75,10 @@ public class StreamerMediaService extends Service {
 
     @Override
     public void onDestroy() {
+
+        // Stop listening for headphone un-plug events.
+        unregisterReceiver(mNoisyAudioStreamReceiver);
+
         mNotificationManager.cancel(NotificationTarget.NOTIFICATION_ID);
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
@@ -256,4 +282,6 @@ public class StreamerMediaService extends Service {
     public void setContinueOnCompletion(boolean continueOnCompletion) {
         this.continueOnCompletion = continueOnCompletion;
     }
+
+
 }

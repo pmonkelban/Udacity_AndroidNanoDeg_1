@@ -16,6 +16,29 @@ import udacity.nano.spotifystreamer.data.StreamerProvider;
 
 public class TrackListAdapter extends CursorAdapter {
 
+
+    /*
+    * These are tied to the the query sTracksByArtist in StreamerProvider.
+    * If the attributes returned by that query changes, these values must be updated.
+    */
+    public static final int IDX_ARTIST_SPOTIFY_ID = 1;
+    public static final int IDX_ARTIST_NAME = 2;
+    public static final int IDX_ARTIST_ICON = 3;
+    public static final int IDX_TRACKS_LAST_UPDATED = 4;
+    public static final int IDX_LAST_UPDATE_COUNTRY = 5;
+    public static final int IDX_ARTIST_ID = 7;
+    public static final int IDX_TRACK_SPOTIFY_ID = 8;
+    public static final int IDX_TRACK_NAME = 9;
+    public static final int IDX_ALBUM = 10;
+    public static final int IDX_DURATION = 11;
+    public static final int IDX_EXPLICIT = 12;
+    public static final int IDX_PLAYABLE = 13;
+    public static final int IDX_POPULARITY = 14;
+    public static final int IDX_PREVIEW_URL = 15;
+    public static final int IDX_TRACK_ICON = 16;
+    public static final int IDX_TRACK_IMAGE = 17;
+
+
     private final int iconWidth;
     private final int iconHeight;
 

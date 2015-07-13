@@ -4,6 +4,9 @@ import android.content.ContentResolver;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
+/*
+* Holds many of the constants that will be needed when interaction with the data provider.
+*/
 public class StreamerContract {
 
     /*
@@ -31,6 +34,9 @@ public class StreamerContract {
     public static final String GET_TRACKS_CONTENT_TYPE =
             ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_GET_TRACKS;
 
+    /*
+    * Defines data related to Artists in the 'artist' table.
+    */
     public static final class ArtistEntry implements BaseColumns {
 
         // Table name
@@ -44,8 +50,10 @@ public class StreamerContract {
 
     }
 
+    /*
+    * Defines data related to Tracks.
+    */
     public static final class TrackEntry implements BaseColumns {
-
 
         // Table name
         public static final String TABLE_NAME = "track";
@@ -66,6 +74,9 @@ public class StreamerContract {
         public static final String COLUMN_IMAGE = "track_image";
     }
 
+    /*
+    * Defines data related to Queries.
+    */
     public static final class QueryEntry implements BaseColumns {
 
         // Table name
@@ -75,6 +86,9 @@ public class StreamerContract {
         public static final String COLUMN_CREATE_TIME = "createTime";
     }
 
+    /*
+    * Links Queries to the resulting Artists.
+    */
     public static final class ArtistQuery implements BaseColumns {
 
         // Table name

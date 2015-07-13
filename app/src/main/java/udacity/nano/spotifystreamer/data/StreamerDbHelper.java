@@ -9,6 +9,9 @@ import udacity.nano.spotifystreamer.data.StreamerContract.TrackEntry;
 import udacity.nano.spotifystreamer.data.StreamerContract.QueryEntry;
 import udacity.nano.spotifystreamer.data.StreamerContract.ArtistQuery;
 
+/*
+* Used for creating or updating the database schema.
+*/
 public class StreamerDbHelper extends SQLiteOpenHelper {
 
     // Increment this value whenever the database schema is modified.

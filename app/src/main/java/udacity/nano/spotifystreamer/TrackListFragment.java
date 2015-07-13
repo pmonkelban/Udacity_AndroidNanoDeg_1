@@ -71,7 +71,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
                         Cursor cursor = (Cursor) mTrackListView.getItemAtPosition(p);
 
                         if (!cursor.isClosed()) {
-                            String listItemSpotifyId = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
+                            String listItemSpotifyId = cursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID);
 
                             if (item.getTrackId().equals(listItemSpotifyId)) {
                                 mPosition = p;
@@ -172,8 +172,8 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
-                String trackSpotifyId = cursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID);
-                String artistSpotifyId = cursor.getString(StreamerProvider.IDX_ARTIST_SPOTIFY_ID);
+                String trackSpotifyId = cursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID);
+                String artistSpotifyId = cursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_ARTIST_SPOTIFY_ID);
 
                 intent.putExtra(SpotifyStreamerActivity.KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
                 intent.putExtra(SpotifyStreamerActivity.KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);

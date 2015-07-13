@@ -18,10 +18,10 @@ import udacity.nano.spotifystreamer.activities.NowPlayingActivity;
 import udacity.nano.spotifystreamer.activities.SpotifyStreamerActivity;
 
 /*
-    * When the image is downloaded (using the Picasso library) and the
-    * onBitmapLoaded() method is called, this will create a Notification.
-    * If the download fails, a default Bitmap image will be used instead.
-    */
+* When the image is downloaded (using the Picasso library) and the
+* onBitmapLoaded() method is called, this will create a Notification.
+* If the download fails, a default Bitmap image will be used instead.
+ */
 public class NotificationTarget implements Target {
 
     // An ID for our notification so we can update or remove them later.
@@ -65,6 +65,11 @@ public class NotificationTarget implements Target {
 
     public void issueNotification()  {
 
+        /*
+        * Use Picasso library to download the image.  When the download completes, onBitmapLoaded
+        * (or onBitmapFailed) will be called.  From there, we'll use the bitmap (or a default
+        * on failure) to issue the notification.
+        */
         Picasso.with(context)
                 .load(trackImageUrl)
                 .placeholder(context.getResources().getDrawable(R.drawable.image_loading, null))
@@ -72,19 +77,7 @@ public class NotificationTarget implements Target {
                 .into(this);
     }
 
-    private void createNotification(Bitmap bitmap) {
 
-        Notification.Action action = generateAction(
-                iconId, label, actionStr);
-
-        buildNotification(
-                action,
-                bitmap,
-                trackName,
-                artistName + " - " + albumName,
-                context);
-
-    }
 
     @Override
     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
@@ -102,7 +95,24 @@ public class NotificationTarget implements Target {
     }
 
     /*
-    * Borrowed from:
+    * Use the bitmap downloaded by issueNotification() to create the notification.
+    */
+    private void createNotification(Bitmap bitmap) {
+
+        Notification.Action action = generateAction(
+                iconId, label, actionStr);
+
+        buildNotification(
+                action,
+                bitmap,
+                trackName,
+                artistName + " - " + albumName,
+                context);
+
+    }
+
+    /*
+    * Borrowed in part from:
     * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
     */
     private Notification.Action generateAction(int icon, String title, String intentAction) {
@@ -119,7 +129,7 @@ public class NotificationTarget implements Target {
     }
 
     /*
-    * Borrowed from:
+    * Borrowed in part from:
     * http://www.binpress.com/tutorial/using-android-media-style-notifications-with-media-session-controls/165
     */
     private void buildNotification(Notification.Action action, Bitmap albumImage,
@@ -160,16 +170,14 @@ public class NotificationTarget implements Target {
                 .setStyle(style)
                 .setVisibility(visibility);
 
+        /*
+        * Create pending actions for when each of the various buttons are pressed.
+        */
         builder.addAction(generateAction(android.R.drawable.ic_media_previous,
                 context.getResources().getString(R.string.previous), SpotifyStreamerActivity.ACTION_PREVIOUS));
 
-//        builder.addAction(generateAction(android.R.drawable.ic_media_rew,
-//                "Rewind", SpotifyStreamerActivity.ACTION_REWIND));
-
+        // Either play or pause.
         builder.addAction(action);
-
-//        builder.addAction(generateAction(android.R.drawable.ic_media_ff,
-//                "Fast Forward", SpotifyStreamerActivity.ACTION_FAST_FORWARD));
 
         builder.addAction(generateAction(android.R.drawable.ic_media_next,
                 context.getResources().getString(R.string.next), SpotifyStreamerActivity.ACTION_NEXT));

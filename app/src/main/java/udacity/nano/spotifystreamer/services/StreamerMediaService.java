@@ -27,6 +27,9 @@ public class StreamerMediaService extends Service {
 
     private NotificationManager mNotificationManager;
 
+    /*
+    * We'll send these broadcases when a track starts or stops (not pause) playing.
+    */
     public static final String TRACK_STOP_BROADCAST_FILTER = "streamer-media-service-on-complete";
     public static final String TRACK_START_BROADCAST_FILTER = "streamer-media-service-track-started";
 
@@ -34,6 +37,13 @@ public class StreamerMediaService extends Service {
 
     private PlayListItem mCurrentlyPlaying;
 
+    /*
+    * This will be true so long as the NowPlayingActivity is active.  When active, we'll keep
+    * looping through all the songs for the current artist.  In this case, we'll re-use the
+    * same notification, just updating the track info.
+    * Once the NowPlayingActivity exits, this will be set to false, and we'll cancel the
+    * notification when the current track finishes.
+    */
     private boolean continueOnCompletion;
 
     private final IBinder mBinder = new StreamerMediaServiceBinder();
@@ -79,8 +89,10 @@ public class StreamerMediaService extends Service {
         // Stop listening for headphone un-plug events.
         unregisterReceiver(mNoisyAudioStreamReceiver);
 
+        // Cancel our Notification
         mNotificationManager.cancel(NotificationTarget.NOTIFICATION_ID);
 
+        // Set preference to indication not playing.
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                 .edit()
                 .putBoolean(MainActivity.PREF_IS_PLAYING, false)
@@ -94,6 +106,9 @@ public class StreamerMediaService extends Service {
         return mBinder;
     }
 
+    /*
+    * Initializes the MediaPlayer and prepares it to play the current song.
+    */
     public boolean reset(final PlayListItem playListItem) {
 
         try {
@@ -103,16 +118,20 @@ public class StreamerMediaService extends Service {
 
             mMediaPlayer = MediaPlayer.create(this, Uri.parse(playListItem.getTrackUri()));
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+            // Keeps the device running, but allows the screen to turn off.
             mMediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
             mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+
                 @Override
                 public void onPrepared(MediaPlayer mp) {
+
+                    // Media has loaded and we're ready to begin playing.
                     Log.d(TAG, "onPrepared() called");
                     mMediaPlayer.start();
 
                     // Notify listeners that a new track has started.
-
                     PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                             .edit()
                             .putString(MainActivity.PREF_CURRENT_ALBUM, playListItem.getAlbumName())
@@ -131,6 +150,7 @@ public class StreamerMediaService extends Service {
             });
 
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
                     Log.d(TAG, "onError() called.  what:" + what + " extra:" + extra);
@@ -139,13 +159,9 @@ public class StreamerMediaService extends Service {
             });
 
             mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-
-                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                            .edit()
-                            .putBoolean(MainActivity.PREF_IS_PLAYING, false)
-                            .commit();
 
                     if (!continueOnCompletion) {
 
@@ -179,6 +195,7 @@ public class StreamerMediaService extends Service {
                 mMediaPlayer.pause();
             }
 
+            // Updates the notification to show the play button
             new NotificationTarget(
                     getApplicationContext(),
                     android.R.drawable.ic_media_play,
@@ -208,6 +225,7 @@ public class StreamerMediaService extends Service {
                 mMediaPlayer.start();
             }
 
+            // Updates the notification to show the pause button
             new NotificationTarget(
                     getApplicationContext(),
                     android.R.drawable.ic_media_pause,
@@ -279,6 +297,10 @@ public class StreamerMediaService extends Service {
         return mMediaPlayer.isPlaying();
     }
 
+    /*
+    * Set to false to indicate there will be no more tracks coming.  Go ahead and cancel
+    * notifications.  If true, we'll re-use the notifications.
+    */
     public void setContinueOnCompletion(boolean continueOnCompletion) {
         this.continueOnCompletion = continueOnCompletion;
     }

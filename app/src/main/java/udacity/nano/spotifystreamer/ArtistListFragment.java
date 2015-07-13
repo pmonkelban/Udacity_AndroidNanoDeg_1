@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import udacity.nano.spotifystreamer.adapters.ArtistListAdapter;
 import udacity.nano.spotifystreamer.data.StreamerContract;
+import udacity.nano.spotifystreamer.data.StreamerProvider;
 
 
 public class ArtistListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -111,7 +112,7 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
                 if (cursor != null) {
-                    String artistSpotifyId = cursor.getString(ArtistListAdapter.IDX_SPOTIFY_ID);
+                    String artistSpotifyId = cursor.getString(StreamerProvider.ARTISTS_BY_QUERY_IDX_SPOTIFY_ID);
 
                     Uri trackListUri = StreamerContract
                             .GET_TRACKS_CONTENT_URI

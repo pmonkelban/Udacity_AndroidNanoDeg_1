@@ -31,39 +31,55 @@ import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.activities.MainActivity;
 import udacity.nano.spotifystreamer.utils.ImageUtils;
 
+/*
+* See the flow charts in the extras directory to better understand how the code works.
+*/
 public class StreamerProvider extends ContentProvider {
 
     // Tag used when logging.
     private static final String TAG = StreamerProvider.class.getCanonicalName();
 
     /*
+    * These are tied to the the query sArtistsByQuery in StreamerProvider.
+    * If the attributes returned by that query changes, these values must be updated.
+    */
+    public static final int ARTISTS_BY_QUERY_IDX_QUERY_STRING = 1;
+    public static final int ARTISTS_BY_QUERY_IDX_CREATE_TIME = 2;
+    public static final int ARTISTS_BY_QUERY_IDX_QUERY_ID = 3;
+    public static final int ARTISTS_BY_QUERY_IDX_ARTIST_ID = 4;
+    public static final int ARTISTS_BY_QUERY_IDX_ID = 5;
+    public static final int ARTISTS_BY_QUERY_IDX_SPOTIFY_ID = 6;
+    public static final int ARTISTS_BY_QUERY_IDX_ARTIST_NAME = 7;
+    public static final int ARTISTS_BY_QUERY_IDX_ARTIST_ICON = 8;
+    public static final int ARTISTS_BY_QUERY_IDX_LAST_UPDATED = 9;
+
+    /*
     * These are tied to the the query sTracksByArtist in StreamerProvider.
     * If the attributes returned by that query changes, these values must be updated.
     */
-
-    public static final int IDX_ARTIST_ID = 0;
-    public static final int IDX_ARTIST_SPOTIFY_ID = 1;
-    public static final int IDX_ARTIST_NAME = 2;
-    public static final int IDX_ARTIST_ICON = 3;
-    public static final int IDX_LAST_UPDATED_TIME = 4;
-    public static final int IDX_LAST_UPDATE_COUNTRY = 5;
-    public static final int IDX_TRACK_ID = 6;
-    public static final int IDX_TRACK_ARTIST_ID = 7;
-    public static final int IDX_TRACK_SPOTIFY_ID = 8;
-    public static final int IDX_TRACK_NAME = 9;
-    public static final int IDX_ALBUM_NAME = 10;
-    public static final int IDX_DURATION = 11;
-    public static final int IDX_EXPLICIT = 12;
-    public static final int IDX_PLAYABLE = 13;
-    public static final int IDX_POPULARITY = 14;
-    public static final int IDX_PREVIEW_URL = 15;
-    public static final int IDX_TRACK_ICON = 16;
-    public static final int IDX_TRACK_IMAGE = 17;
+    public static final int TRACKS_BY_ARTIST_IDX_ARTIST_ID = 0;
+    public static final int TRACKS_BY_ARTIST_IDX_ARTIST_SPOTIFY_ID = 1;
+    public static final int TRACKS_BY_ARTIST_IDX_ARTIST_NAME = 2;
+    public static final int TRACKS_BY_ARTIST_IDX_ARTIST_ICON = 3;
+    public static final int TRACKS_BY_ARTIST_IDX_LAST_UPDATED_TIME = 4;
+    public static final int TRACKS_BY_ARTIST_IDX_LAST_UPDATE_COUNTRY = 5;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_ID = 6;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_ARTIST_ID = 7;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID = 8;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_NAME = 9;
+    public static final int TRACKS_BY_ARTIST_IDX_ALBUM_NAME = 10;
+    public static final int TRACKS_BY_ARTIST_IDX_DURATION = 11;
+    public static final int TRACKS_BY_ARTIST_IDX_EXPLICIT = 12;
+    public static final int TRACKS_BY_ARTIST_IDX_PLAYABLE = 13;
+    public static final int TRACKS_BY_ARTIST_IDX_POPULARITY = 14;
+    public static final int TRACKS_BY_ARTIST_IDX_PREVIEW_URL = 15;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_ICON = 16;
+    public static final int TRACKS_BY_ARTIST_IDX_TRACK_IMAGE = 17;
 
     /*
     * Indicies for the columns returned when looking for a cached Query.
     */
-    private static final int IDX_QUERY_ID = 0;
+    private static final int QUERY_IDX_QUERY_ID = 0;
 
     private static final UriMatcher sUriMatcher;
 
@@ -88,7 +104,7 @@ public class StreamerProvider extends ContentProvider {
     private int idealImageWidth;
     private int idealImageHeight;
 
-    // Length of time, in seconds, before a cached item is considered stale.
+    // Length of time, in milliseconds, before a cached item is considered stale.
     private static final long MAX_CACHE_TIME = 1000 * 60 * 60 * 2; // 2 hours
 
     // Used for reading and writing dates to and from the database.  Note: all times are in UTC.
@@ -303,7 +319,7 @@ public class StreamerProvider extends ContentProvider {
                     /*
                     * Delete ArtistQuery Entry.
                     */
-                    int queryId = checkForCachedQueryCursor.getInt(IDX_QUERY_ID);
+                    int queryId = checkForCachedQueryCursor.getInt(QUERY_IDX_QUERY_ID);
 
                     db.delete(
                             StreamerContract.ArtistQuery.TABLE_NAME,
@@ -336,7 +352,6 @@ public class StreamerProvider extends ContentProvider {
                             null,
                             null,
                             null);
-
                 }
             }
 

@@ -9,9 +9,6 @@ import android.test.AndroidTestCase;
 import java.util.HashSet;
 import java.util.Set;
 
-import udacity.nano.spotifystreamer.adapters.ArtistListAdapter;
-import udacity.nano.spotifystreamer.adapters.TrackListAdapter;
-
 public class TestProvider extends AndroidTestCase {
 
 
@@ -110,7 +107,7 @@ public class TestProvider extends AndroidTestCase {
                 "5264gfijccY4lvqa45OVEp", "5zgR7V2XsPpRYs1ou6xOPB"};
 
 
-        String result = compareResults(cursor, expectedResults, ArtistListAdapter.IDX_SPOTIFY_ID);
+        String result = compareResults(cursor, expectedResults, StreamerProvider.ARTISTS_BY_QUERY_IDX_SPOTIFY_ID);
         assertNull(result, result);
 
     }
@@ -145,7 +142,7 @@ public class TestProvider extends AndroidTestCase {
                 "1wI1dtbKoc5EUtMdzhFkPG", "1gsgGMKLJy7AEKtqZpd4JH",
                 "4rLIUR60zAvcNxH0LYUtV9", "5YIWWwapZoj5Plr06TqcMJ"};
 
-        String result = compareResults(cursor, expectedResults, TrackListAdapter.IDX_TRACK_SPOTIFY_ID);
+        String result = compareResults(cursor, expectedResults, StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID);
         assertNull(result, result);
     }
 

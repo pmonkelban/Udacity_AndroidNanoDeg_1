@@ -321,15 +321,15 @@ public class NowPlayingActivity extends Activity
 
                 PlayListItem item = new PlayListItem();
 
-                item.setArtistName(trackListCursor.getString(StreamerProvider.IDX_ARTIST_NAME));
-                item.setArtistId(trackListCursor.getString(StreamerProvider.IDX_ARTIST_SPOTIFY_ID));
-                item.setTrackUri(trackListCursor.getString(StreamerProvider.IDX_PREVIEW_URL));
-                item.setTrackId(trackListCursor.getString(StreamerProvider.IDX_TRACK_SPOTIFY_ID));
-                item.setTrackName(trackListCursor.getString(StreamerProvider.IDX_TRACK_NAME));
-                item.setAlbumName(trackListCursor.getString(StreamerProvider.IDX_ALBUM_NAME));
-                item.setTrackImage(trackListCursor.getString(StreamerProvider.IDX_TRACK_IMAGE));
-                item.setDuration(trackListCursor.getInt(StreamerProvider.IDX_DURATION));
-                item.setExplicit(trackListCursor.getInt(StreamerProvider.IDX_EXPLICIT) == 1);
+                item.setArtistName(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_ARTIST_NAME));
+                item.setArtistId(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_ARTIST_SPOTIFY_ID));
+                item.setTrackUri(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_PREVIEW_URL));
+                item.setTrackId(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID));
+                item.setTrackName(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_NAME));
+                item.setAlbumName(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_ALBUM_NAME));
+                item.setTrackImage(trackListCursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_IMAGE));
+                item.setDuration(trackListCursor.getInt(StreamerProvider.TRACKS_BY_ARTIST_IDX_DURATION));
+                item.setExplicit(trackListCursor.getInt(StreamerProvider.TRACKS_BY_ARTIST_IDX_EXPLICIT) == 1);
 
                 if (mTrackSpotifyId.equals(item.getTrackId())) {
                     mPlayList.setPosition(i);

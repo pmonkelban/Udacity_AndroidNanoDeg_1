@@ -13,10 +13,6 @@ import udacity.nano.spotifystreamer.TrackListFragment;
  */
 public class TrackListActivity extends SpotifyStreamerActivity {
 
-    private final String TAG = this.getClass().getCanonicalName();
-
-    static final String TRACK_LIST_FRAGMENT = "TRACK_LIST_FRAG";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -34,7 +30,7 @@ public class TrackListActivity extends SpotifyStreamerActivity {
             fragment.setArguments(arguments);
 
             getFragmentManager().beginTransaction()
-                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT)
+                    .replace(R.id.track_list_container, fragment, TRACK_LIST_FRAGMENT_ID)
                     .commit();
         }
 
@@ -42,7 +38,14 @@ public class TrackListActivity extends SpotifyStreamerActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+
+        /*
+        * This menu differs from that of the Main Activity.  TrackListActivity is for single
+        * panel devices.  With the user on the Track list, if they were to enter settings,
+        * that could affect the tracks listed (by changing country, or allow explicit).  It's
+        * messy to update the list at that point, so I've removed Settings from here.  They
+        * can go back to the Artist search page and access Settings from there.
+        */
         getMenuInflater().inflate(R.menu.track_list, menu);
         return super.onCreateOptionsMenu(menu);
     }

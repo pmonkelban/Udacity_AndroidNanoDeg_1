@@ -24,12 +24,6 @@ public class MainActivity extends SpotifyStreamerActivity implements ArtistListF
     private final String TAG = getClass().getCanonicalName();
 
     /*
-    * Handles ot the Artist and Track list fragments.
-    */
-    static final String TRACK_LIST_FRAGMENT_ID = "TRACK_LIST_FRAG";
-    static final String ARTIST_LIST_FRAGMENT_ID = "ARTIST_LIST_FRAG";
-
-    /*
     * We'll store an item during onSavedInstanceSate() so we know if this is
     * the first time the app is starting, or if it's being restarted (i.e.
     * after a configuration change.  If it's the first time through,

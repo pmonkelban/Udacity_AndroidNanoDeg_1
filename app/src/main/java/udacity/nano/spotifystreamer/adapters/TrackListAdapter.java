@@ -14,6 +14,9 @@ import com.squareup.picasso.Picasso;
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.data.StreamerProvider;
 
+/*
+* Shows Track Data for each element in an ArrayAdapter.
+*/
 public class TrackListAdapter extends CursorAdapter {
 
 

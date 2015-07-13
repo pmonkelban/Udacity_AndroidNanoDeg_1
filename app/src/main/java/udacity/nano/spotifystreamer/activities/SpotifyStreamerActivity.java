@@ -17,10 +17,14 @@ import android.view.MenuItem;
 import udacity.nano.spotifystreamer.R;
 import udacity.nano.spotifystreamer.services.StreamerMediaService;
 
+/*
+* An Abstract class that holds functionality used by both MainActivity and TrackListActivity.
+*/
 public abstract class SpotifyStreamerActivity extends ActionBarActivity {
 
     protected final String TAG = getClass().getCanonicalName();
 
+    // Actions to affect the track being played.
     public static final String ACTION = "action";
     public static final String ACTION_NO_OP = "action_no_op";
     public static final String ACTION_PLAY = "action_play";
@@ -28,12 +32,14 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     public static final String ACTION_PREVIOUS = "action_prev";
     public static final String ACTION_NEXT = "action_next";
 
+    // Keys to pull data out of Bundles and Intents.
     public static final String KEY_TRACK_SPOTIFY_ID = "key_track_id";
     public static final String KEY_ARTIST_SPOTIFY_ID = "key_artist_id";
     public static final String KEY_RESET_ON_STARTUP = "key_reset_on_start";
     public static final String KEY_CURRENT_TRACK = "key_current_track";
     public static final String KEY_IS_PLAYING = "key_is_playing";
 
+    // Keys to items stored in preferences.
     public static final String PREF_CURRENT_TRACK_NAME = "prefs_current_track_name";
     public static final String PREF_CURRENT_TRACK_SPOTIFY_ID = "prefs_current_track_spotify_id";
     public static final String PREF_CURRENT_TRACK_URL = "prefs_current_track_url";
@@ -45,6 +51,13 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     public static final String PREF_ALLOW_ON_LOCK = "prefs_show_on_lock";
     public static final String PREF_IS_PLAYING = "prefs_is_playing";
 
+    /*
+    * Handles to the Artist and Track list fragments.
+    */
+    static final String TRACK_LIST_FRAGMENT_ID = "TRACK_LIST_FRAG";
+    static final String ARTIST_LIST_FRAGMENT_ID = "ARTIST_LIST_FRAG";
+
+    // For sharing the current track data.
     private ShareActionProvider mShareActionProvider;
 
     /*
@@ -57,7 +70,7 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     private MenuItem mShareTrackMenuItem;
 
 
-    // Used to format the currently playing track when shared.
+    // Used to format the currently playing track text when shared.
     protected final String NEWLINE = System.getProperty("line.separator");
 
     /*
@@ -85,14 +98,19 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
         }
     };
 
+    /*
+    * When a new track begins, show the Now Playing button and the Share menu item.  Set
+    * the pending intent for the share item to contain the new track's data.
+    */
     protected void onTrackStart() {
-
         mNowPlayingMenuItem.setVisible(true);
-
         mShareActionProvider.setShareIntent(createShareTrackIntent());
         mShareTrackMenuItem.setVisible(true);
     }
 
+    /*
+    * When the track stops playing, hide the menu items.
+    */
     protected void onTrackStop() {
         mNowPlayingMenuItem.setVisible(false);
         mShareTrackMenuItem.setVisible(false);
@@ -122,7 +140,6 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
         mShareTrackMenuItem = menu.findItem(R.id.item_share);
         mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(mShareTrackMenuItem);
 
-
         // Get the current playing/not playing state
         SharedPreferences prefs =
                 PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
@@ -136,6 +153,10 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
+    /*
+    * Creates an intent that contains the current track data for when the user selects
+    * Share current track.
+    */
     protected Intent createShareTrackIntent() {
 
         SharedPreferences prefs =
@@ -190,6 +211,11 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
 
         if (!prefs.getBoolean(PREF_IS_PLAYING, false)) return;
 
+        /*
+        * Get the currenly playing track from preferences, and use it to start the
+        * NowPlayingActivity.  Set RESET_ON_STARTUP to false so we don't restart the currently
+        * playing track if one is being played.
+        */
         Intent intent = new Intent(this, NowPlayingActivity.class);
         intent.putExtra(KEY_ARTIST_SPOTIFY_ID, prefs.getString(PREF_CURRENT_ARTIST_SPOTIFY_ID, ""));
         intent.putExtra(KEY_TRACK_SPOTIFY_ID, prefs.getString(PREF_CURRENT_TRACK_SPOTIFY_ID, ""));

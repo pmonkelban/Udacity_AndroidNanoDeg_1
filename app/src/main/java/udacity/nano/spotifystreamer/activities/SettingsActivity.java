@@ -19,12 +19,9 @@ import udacity.nano.spotifystreamer.R;
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener {
 
-    public static final String ON_SETTINGS_CHANGED_CACHE_INVALID =
-            "settings-changed-cache-invalid";
-
-    public static final String ON_SETTINGS_CHANGED_NOTIFICATIONS_INVALID =
-            "settings-changed-notifications-invalid";
-
+    /*
+    * We'll use these to ensure the user enters a valid country code.
+    */
     private static final Set<String> VALID_COUNTRY_CODES =
             new HashSet<>(Arrays.asList(Locale.getISOCountries()));
 
@@ -41,7 +38,7 @@ public class SettingsActivity extends PreferenceActivity
 
         addPreferencesFromResource(R.xml.pref_general);
 
-         /*
+        /*
         * Get the most recent values for the preferences.
         */
         SharedPreferences prefs =
@@ -63,6 +60,7 @@ public class SettingsActivity extends PreferenceActivity
     }
 
     private void bindPreferenceSummaryToValue(Preference preference) {
+
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(this);
 
@@ -77,6 +75,7 @@ public class SettingsActivity extends PreferenceActivity
                             .getBoolean(preference.getKey(), true));
         }
 
+        // Determine which preference was modified.
         switch (preference.getKey())  {
             case MainActivity.PREF_COUNTRY_CODE:
                 preference.setSummary(mLastValidCountryCode);
@@ -128,9 +127,9 @@ public class SettingsActivity extends PreferenceActivity
             String msg = getString(R.string.invalid_country_code, newCountryCode);
             Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
 
-               /*
-               * Reset country to last know good value.
-               */
+            /*
+            * Reset country to last know good value.
+            */
             PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                     .edit()
                     .putString(MainActivity.PREF_COUNTRY_CODE, mLastValidCountryCode)
@@ -146,9 +145,7 @@ public class SettingsActivity extends PreferenceActivity
         if (mLastExplicitValue.equals(newValue)) return;
 
         mLastExplicitValue = newValue;
-
         preference.setSummary((newValue) ? mTrueString : mFalseString);
-
     }
 
     private void handleAllowOnLockPrefChange(Preference preference, Boolean newValue)  {
@@ -156,10 +153,6 @@ public class SettingsActivity extends PreferenceActivity
         if (mLastOnLockValue.equals(newValue)) return;
 
         mLastOnLockValue = newValue;
-
         preference.setSummary((newValue) ? mTrueString : mFalseString);
-
     }
-
-
 }

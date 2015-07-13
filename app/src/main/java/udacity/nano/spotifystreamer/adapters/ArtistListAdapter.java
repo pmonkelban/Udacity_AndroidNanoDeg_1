@@ -13,8 +13,12 @@ import com.squareup.picasso.Picasso;
 
 import udacity.nano.spotifystreamer.R;
 
+/*
+* Shows Artist Data for each element in an ArrayAdapter.
+*/
 public class ArtistListAdapter extends CursorAdapter {
 
+    // The ideal width and height for the Artist icons.
     private final int iconWidth;
     private final int iconHeight;
 
@@ -49,7 +53,6 @@ public class ArtistListAdapter extends CursorAdapter {
                              int iconWidth, int iconHeight) {
 
         super(context, c, flags);
-
         this.iconWidth = iconWidth;
         this.iconHeight = iconHeight;
     }

@@ -1,5 +1,9 @@
 package udacity.nano.spotifystreamer;
 
+/*
+* This class stores a list of PlayListItems and provides methods to move to the prev/next track,
+* get the current item, etc.
+*/
 public class PlayList {
 
     private final PlayListItem[] playListItems;

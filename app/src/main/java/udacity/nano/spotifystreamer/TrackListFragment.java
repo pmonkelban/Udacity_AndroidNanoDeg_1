@@ -36,9 +36,10 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     public static final String BUNDLE_KEY_ARTIST_ID = "key_artist_id";
     private static final String BUNDLE_KEY_LAST_POSITION = "key_last_position";
 
-
-    // Bound to a UI ListView element to provide the results of
-    // the top tracks query.
+    /*
+    * Bound to a UI ListView element to provide the results of
+    * the top tracks query.
+    */
     private TrackListAdapter mTrackAdapter;
 
     private ListView mTrackListView;
@@ -129,6 +130,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
+        // Store the URI to get the current list of tracks.
         super.onSaveInstanceState(outState);
         outState.putParcelable(BUNDLE_KEY_ARTIST_ID, mTrackListUri);
 
@@ -159,10 +161,10 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
         mTrackListView.setEmptyView(rootView.findViewById(R.id.no_track_data));
         mTrackListView.setAdapter(mTrackAdapter);
 
-         /*
-         * Detect when a list view item (an artist) is clicked, and launch
-         * and intent passing the artist's id as an extra.
-         */
+        /*
+        * Detect when a list view item (a track) is clicked, and launch
+        * and intent passing the artist's id and track id as extras.
+        */
         mTrackListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
@@ -172,8 +174,11 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
 
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
-                String trackSpotifyId = cursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID);
-                String artistSpotifyId = cursor.getString(StreamerProvider.TRACKS_BY_ARTIST_IDX_ARTIST_SPOTIFY_ID);
+                String trackSpotifyId = cursor.getString(
+                        StreamerProvider.TRACKS_BY_ARTIST_IDX_TRACK_SPOTIFY_ID);
+
+                String artistSpotifyId = cursor.getString(
+                        StreamerProvider.TRACKS_BY_ARTIST_IDX_ARTIST_SPOTIFY_ID);
 
                 intent.putExtra(SpotifyStreamerActivity.KEY_TRACK_SPOTIFY_ID, trackSpotifyId);
                 intent.putExtra(SpotifyStreamerActivity.KEY_ARTIST_SPOTIFY_ID, artistSpotifyId);
@@ -187,7 +192,7 @@ public class TrackListFragment extends Fragment implements LoaderManager.LoaderC
             }
         });
 
-        // Read last search and last position from the saved state
+        // Read last position from the saved state
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey(BUNDLE_KEY_LAST_POSITION)) {
                 mPosition = savedInstanceState.getInt(BUNDLE_KEY_LAST_POSITION);

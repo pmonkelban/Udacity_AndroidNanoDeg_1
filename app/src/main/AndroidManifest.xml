@@ -42,13 +42,6 @@
             android:name=".data.StreamerProvider"
             android:authorities="udacity.nano.spotifystreamer" />
 
-        <!-- Receive events such as unplugging headphones, so that we can pause playback -->
-        <receiver android:name=".utils.MusicIntentReceiver" >
-            <intent-filter>
-                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
-            </intent-filter>
-        </receiver>
-
         <service
             android:name=".services.StreamerMediaService"
             android:exported="false" />

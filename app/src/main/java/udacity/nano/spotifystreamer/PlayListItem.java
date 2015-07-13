@@ -3,6 +3,10 @@ package udacity.nano.spotifystreamer;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+/*
+* Stores track data in a Parcelbable form so that it can be passed through intents or saved
+* in Bundles.
+*/
 public class PlayListItem implements Parcelable {
 
     private String trackUri;

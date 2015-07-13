@@ -28,7 +28,7 @@ public class StreamerMediaService extends Service {
     private NotificationManager mNotificationManager;
 
     /*
-    * We'll send these broadcases when a track starts or stops (not pause) playing.
+    * We'll send these broadcasts when a track starts or stops (not pause) playing.
     */
     public static final String TRACK_STOP_BROADCAST_FILTER = "streamer-media-service-on-complete";
     public static final String TRACK_START_BROADCAST_FILTER = "streamer-media-service-track-started";

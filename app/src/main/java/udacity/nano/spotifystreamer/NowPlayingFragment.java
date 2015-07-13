@@ -13,6 +13,10 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
+/*
+* Handles displaying the data related to the currently playing track.  Most of the logic
+* for handling track changes, etc. is contained in NowPlayingActivity.
+*/
 public class NowPlayingFragment extends DialogFragment {
 
     public interface NowPlayingListener {
@@ -41,7 +45,6 @@ public class NowPlayingFragment extends DialogFragment {
     private TextView mSeekBarDurationLabel;
     private TextView mSeekBarLocationLabel;
 
-
     private SeekBar mSeekBar;
 
     private int mImageWidth;
@@ -52,7 +55,7 @@ public class NowPlayingFragment extends DialogFragment {
     ImageButton mPauseButton;
     ImageButton mNextButton;
 
-
+    // Used to ignore updates when the user is trying to move the seek bar.
     private boolean suspendProgressUpdates = false;
 
     /*
@@ -89,12 +92,12 @@ public class NowPlayingFragment extends DialogFragment {
     }
 
     /*
-    * Takes a number of miliSeconds and formats it as M:S.
+    * Takes a number of milliSeconds and formats it as M:S.
     * Seconds will always be 2 digits.
     */
-    private static String formatDurationLabel(int miliSeconds)  {
+    private static String formatDurationLabel(int milliSeconds)  {
 
-        int seconds = miliSeconds / 1000;
+        int seconds = milliSeconds / 1000;
 
         int mins = seconds / 60;
         int secs = seconds % 60;
@@ -113,6 +116,11 @@ public class NowPlayingFragment extends DialogFragment {
     }
 
     public void setSeekBarLocation(int location)  {
+
+        /*
+        * Do not update the seekbar programatically if suspendProgressUpdates is true.  If the
+        * user is trying to move the seek bar, it's kinda frustrating if the app takes over...
+        */
         if ((mSeekBar != null) && (!suspendProgressUpdates)) mSeekBar.setProgress(location);
         if (mSeekBarLocationLabel != null) mSeekBarLocationLabel.setText(formatDurationLabel(location));
 
@@ -120,6 +128,7 @@ public class NowPlayingFragment extends DialogFragment {
 
     public void setIsPlaying(boolean isPlaying)  {
 
+        // Toggles the Play/Pause button
         if ((mPlayButton != null) && (mPauseButton != null)) {
             if (isPlaying) {
                 mPlayButton.setVisibility(View.GONE);
@@ -163,11 +172,8 @@ public class NowPlayingFragment extends DialogFragment {
         mSeekBarDurationLabel = (TextView) rootView.findViewById(R.id.seek_bar_end_label);
         mSeekBarLocationLabel = (TextView) rootView.findViewById(R.id.seek_bar_start_label);
 
-
         mSeekBar = (SeekBar) rootView.findViewById(R.id.seek_bar);
-
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -182,6 +188,8 @@ public class NowPlayingFragment extends DialogFragment {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
+
+                // Seek to the specified position, and resume automatic updates.
                 mListener.seekTo(seekBar.getProgress());
                 suspendProgressUpdates = false;
             }
@@ -220,11 +228,12 @@ public class NowPlayingFragment extends DialogFragment {
             }
         });
 
-        // Notify the listener that we're ready to receive values.
+        /*
+        * Notify the listener (calling Activity) that we're ready to begin receiving data.  The
+        * view has been inflated, so it's ready to get the current values.
+        */
         mListener.requestContentRefresh();
 
         return rootView;
-
     }
-
 }

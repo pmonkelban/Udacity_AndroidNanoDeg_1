@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--Sets the color of an item when it is pressed, activated, or neither -->
     <item android:drawable="@drawable/color_item_pressed" android:state_pressed="true" />
     <item android:drawable="@drawable/color_item_selected" android:state_pressed="false" android:state_activated="true" />
     <item android:drawable="@drawable/color_item_not_selected" android:state_pressed="false" android:state_activated="false" />

@@ -47,12 +47,14 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
     Callback mCallback;
 
+    /*
+    * By implementing this interface, the listener can be notified when a Artist is selected.
+    */
     public interface Callback  {
         void onArtistSelected(Uri trackListUri);
     }
 
     public ArtistListFragment() {
-
     }
 
     @Override
@@ -62,6 +64,9 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
         iconWidth = (int) getActivity().getResources().getDimension(R.dimen.icon_width);
         iconHeight = (int) getActivity().getResources().getDimension(R.dimen.icon_height);
 
+        /*
+        * Set mCallback to the calling activity.
+        */
         try  {
             mCallback = (Callback) getActivity();
 
@@ -112,7 +117,8 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
 
                 if (cursor != null) {
-                    String artistSpotifyId = cursor.getString(StreamerProvider.ARTISTS_BY_QUERY_IDX_SPOTIFY_ID);
+                    String artistSpotifyId = cursor.getString(
+                            StreamerProvider.ARTISTS_BY_QUERY_IDX_SPOTIFY_ID);
 
                     Uri trackListUri = StreamerContract
                             .GET_TRACKS_CONTENT_URI
@@ -122,13 +128,12 @@ public class ArtistListFragment extends Fragment implements LoaderManager.Loader
 
                     mCallback.onArtistSelected(trackListUri);
                 }
+
                 mPosition = position;
 
                 view.setActivated(true);
             }
         });
-
-
 
         // Read last search and last position from the saved state
         if (savedInstanceState != null)  {

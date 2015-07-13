@@ -3,7 +3,7 @@
     android:id="@+id/artist_list_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="5dp"
+    android:layout_margin="@dimen/padding_med"
     android:orientation="horizontal"
     android:background="@drawable/list_item_selector">
 
@@ -23,6 +23,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginLeft="10dp" />
+        android:layout_marginLeft="@dimen/padding_large" />
 
 </LinearLayout>

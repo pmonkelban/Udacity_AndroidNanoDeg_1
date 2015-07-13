@@ -103,17 +103,17 @@ public abstract class SpotifyStreamerActivity extends ActionBarActivity {
     * the pending intent for the share item to contain the new track's data.
     */
     protected void onTrackStart() {
-        mNowPlayingMenuItem.setVisible(true);
         mShareActionProvider.setShareIntent(createShareTrackIntent());
-        mShareTrackMenuItem.setVisible(true);
+        if (mShareTrackMenuItem != null) mShareTrackMenuItem.setVisible(true);
+        if (mNowPlayingMenuItem != null) mNowPlayingMenuItem.setVisible(true);
     }
 
     /*
     * When the track stops playing, hide the menu items.
     */
     protected void onTrackStop() {
-        mNowPlayingMenuItem.setVisible(false);
-        mShareTrackMenuItem.setVisible(false);
+        if (mNowPlayingMenuItem != null) mNowPlayingMenuItem.setVisible(false);
+        if (mShareTrackMenuItem != null) mShareTrackMenuItem.setVisible(false);
     }
 
     @Override
